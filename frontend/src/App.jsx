@@ -1911,16 +1911,28 @@ function Dashboard() {
   const [months, setMonths] = useState(12);
   const [buildingFilter, setBuildingFilter] = useState("");
   const [selectedBuilding, setSelectedBuilding] = useState("");
-  //ดึงข้อมูลสถิติแดชบอร์ดจากเซิร์ฟเวอร์โดยอัตโนมัติ
+
+  const formatRoomLabel = (roomName, buildingName) => {
+    if (!roomName) return "";
+    if (!buildingName) return roomName;
+    return (
+      roomName
+        .replace(buildingName, "")
+        .replace(/^[\s·\-:]+/, "")
+        .trim() || roomName
+    );
+  };
+
   useEffect(() => {
     setError("");
     api
       .get("/admin/dashboard", {
         params: { months, building: selectedBuilding || buildingFilter },
-      }) //ส่งคำร้องขอข้อมูลสถิติ
+      })
       .then((response) => setData(response.data))
       .catch((err) => setError(getErrorMessage(err)));
   }, [months, buildingFilter, selectedBuilding]);
+
   const chartMonths = data
     ? Array.from({ length: months }, (_, index) => {
         const date = new Date();
@@ -1929,12 +1941,15 @@ function Dashboard() {
         return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
       })
     : [];
+
   const buildingNames = data
     ? data.buildings.map((item) => item.building_name)
     : [];
+
   const visibleBuildings = buildingNames.filter(
     (name) => !buildingFilter || name === buildingFilter,
   );
+
   const colors = [
     "#0062ff",
     "#e3a32f",
@@ -1958,15 +1973,16 @@ function Dashboard() {
     "#efd469",
     "#c396e7",
   ];
+
   const chartData =
     data &&
     (selectedBuilding
       ? {
-          labels: chartMonths,
+    labels: chartMonths,
           datasets: [
             ...new Set(data.room_monthly.map((item) => item.room_name)),
           ].map((room, index) => ({
-            label: room,
+            label: formatRoomLabel(room, selectedBuilding),
             data: chartMonths.map((month) => {
               const item = data.room_monthly.find(
                 (row) => row.month === month && row.room_name === room,
@@ -1978,7 +1994,7 @@ function Dashboard() {
           })),
         }
       : {
-          labels: chartMonths,
+         labels: chartMonths,
           datasets: visibleBuildings.map((building, index) => ({
             label: building,
             data: chartMonths.map((month) => {
@@ -1988,17 +2004,20 @@ function Dashboard() {
               return item ? Number(item.average_score) : null;
             }),
             backgroundColor: colors[index % colors.length],
-            borderRadius: 4, //ความโค้งของมุมแท่งกราฟ
+            borderRadius: 4,
           })),
         });
-        
+
   const chartOptions = {
-    responsive: true, //ปรับขนาดอัตโนมัติตามขนาดหน้าจอ
-    maintainAspectRatio: false, //ปิดการล็อกสัดส่วนความกว้างต่อความสูงแบบตายตัว
-    interaction: { mode: "nearest", intersect: true },//โหมดการโต้ตอบกับกราฟ
-    plugins: { legend: { position: "bottom" } }, //ตำแหน่งคำอธิบายใต้กราฟ
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: "nearest", intersect: true },
+    plugins: {
+      legend: { display: false },
+    },
     scales: { y: { min: 0, max: 5, ticks: { stepSize: 1 } } },
   };
+
   return (
     <>
       <PageHeader
@@ -2048,6 +2067,7 @@ function Dashboard() {
               </div>
             </div>
           </div>
+
           <section className="content-card dashboard-chart-card">
             <div className="dashboard-chart-heading">
               <div className="card-heading">
@@ -2106,34 +2126,65 @@ function Dashboard() {
                 )}
               </div>
             </div>
+
             {chartData && (
-              <div className="dashboard-chart">
-                {selectedBuilding ? (
-                  <Bar data={chartData} options={chartOptions} />
-                ) : (
+              <div className="dashboard-chart-wrapper">
+                <div className="dashboard-chart">
                   <Bar
                     data={chartData}
-                    options={{
-                      ...chartOptions,
-                      onClick: (_, elements) => {
-                        if (elements.length)
-                          setSelectedBuilding(
-                            visibleBuildings[elements[0].datasetIndex],
-                          );
-                      },
-                    }}
+                    options={
+                      selectedBuilding
+                        ? chartOptions
+                        : {
+                            ...chartOptions,
+                            onClick: (_, elements) => {
+                              if (elements.length > 0) {
+                                const idx = elements[0].datasetIndex;
+                                const clickedBuilding =
+                                  chartData.datasets?.[idx]?.label;
+                                if (clickedBuilding) {
+                                  setSelectedBuilding(clickedBuilding);
+                                }
+                              }
+                            },
+                          }
+                    }
                   />
-                )}
-                {!chartData.datasets.some((dataset) =>
-                  dataset.data.some((value) => value !== null),
-                ) && (
-                  <div className="empty-state">
-                    ยังไม่มีข้อมูลการประเมินในช่วงเวลานี้
-                  </div>
-                )}
+                  {!chartData.datasets.some((dataset) =>
+                    dataset.data.some((value) => value !== null),
+                  ) && (
+                    <div className="empty-state">
+                      ยังไม่มีข้อมูลการประเมินในช่วงเวลานี้
+                    </div>
+                  )}
+                </div>
+
+                <div className="custom-legend-box">
+                  {chartData.datasets.map((dataset, idx) => (
+                    <div
+                      className="custom-legend-item"
+                      key={`${dataset.label}-${idx}`}
+                    >
+                      <span
+                        className="custom-legend-swatch"
+                        style={{
+                          backgroundColor: Array.isArray(
+                            dataset.backgroundColor,
+                          )
+                            ? dataset.backgroundColor[0]
+                            : dataset.backgroundColor,
+                        }}
+                      />
+                      <span className="custom-legend-label">
+                        {dataset.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </section>
+
           <section className="content-card top-rooms">
             <div className="card-heading">
               <div>
@@ -2181,6 +2232,8 @@ function Dashboard() {
     </>
   );
 }
+      
+         
 function Evaluations() {
   const [data, setData] = useState({ data: [], pagination: {} });
   const [wards, setWards] = useState([]);

@@ -1272,3 +1272,55 @@ a {
     height: 297mm;
   }
 }
+
+.custom-legend-box {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 18px;
+  margin-top: 14px;
+}
+
+.custom-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.custom-legend-swatch {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.custom-legend-label {
+  line-height: 1.3;
+}
+
+/* มือถือ: แบ่ง 2 คอลัมน์ซ้าย-ขวาเท่ากัน */
+@media only screen and (max-width: 768px) {
+  .custom-legend-box {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px 12px !important;
+    justify-content: stretch !important;
+  }
+
+  .custom-legend-item {
+    display: flex !important;
+    min-width: 0 !important;
+    font-size: 12px !important;
+  }
+
+  .custom-legend-swatch {
+    flex: 0 0 24px !important;
+    width: 24px !important;
+    height: 11px !important;
+  }
+
+  .custom-legend-label {
+    overflow-wrap: anywhere;
+  }
+}
