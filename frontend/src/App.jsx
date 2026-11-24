@@ -654,6 +654,37 @@ function QrManagement() {
   const [busy, setBusy] = useState(false);
   const [editingWard, setEditingWard] = useState(null);
   const qrPreviewRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth <= 768 : false,
+  );
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth <= 768);
+    }
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+  const [openWardPicker, setOpenWardPicker] = useState(false);
+  useEffect(() => {
+    function handleOutsidePointerDown(event) {
+      const target = event.target;
+      if (
+        target instanceof Element &&
+        (target.closest(".qr-picker-container") ||
+          target.closest(".ward-picker-container"))
+      ) {
+        return;
+      }
+      setOpenQrPickerByWard({});
+      setOpenWardPicker(false);
+    }
+
+    document.addEventListener("pointerdown", handleOutsidePointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handleOutsidePointerDown);
+    };
+  }, []);
 
   // ปิด Dropdown เลือก QR Code / เตียง เมื่อคลิกหรือแตะภายนอกรายการ
   useEffect(() => {
@@ -1167,30 +1198,86 @@ function QrManagement() {
           <div className="row g-3">
             <div className="col-md-6">
               <label className="form-label">Ward</label>
-              <select
-                className="form-select"
-                value={selectedWardId}
-                onChange={(event) => chooseWard(event.target.value)}
-              >
-                <option value="">เลือก Ward</option>
-                {wards.map((ward) => (
-                  <option
-                    key={ward.ward_id}
-                    value={ward.ward_id}
-                    disabled={
-                      !Number(ward.is_active) ||
-                      completedWardIds.has(String(ward.ward_id))
-                    }
+              <div className="position-relative ward-picker-container">
+                <button
+                  type="button"
+                  className="form-select text-start"
+                  aria-expanded={openWardPicker}
+                  onClick={() => setOpenWardPicker((prev) => !prev)}
+                  style={{
+                    minHeight: 42,
+                    whiteSpace: "normal",
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {selectedWard
+                    ? `${selectedWard.ward_code} · ${selectedWard.ward_name}`
+                    : "เลือก Ward"}
+                </button>
+
+                {openWardPicker && (
+                  <div
+                    className="dropdown-menu show w-100 p-1 shadow-sm"
+                    role="listbox"
+                    style={{
+                      maxHeight: 240,
+                      overflowY: "auto",
+                      WebkitOverflowScrolling: "touch",
+                      zIndex: 25,
+                    }}
                   >
-                    {ward.ward_code} · {ward.ward_name}
-                    {completedWardIds.has(String(ward.ward_id))
-                      ? " · สร้าง QR ครบแล้ว"
-                      : Number(ward.is_active)
-                        ? ""
-                        : " · ปิดใช้งาน"}
-                  </option>
-                ))}
-              </select>
+                    <button
+                      type="button"
+                      className={`dropdown-item rounded py-2 ${
+                        !selectedWardId ? "active" : ""
+                      }`}
+                      onClick={() => {
+                        chooseWard("");
+                        setOpenWardPicker(false);
+                      }}
+                    >
+                      เลือก Ward
+                    </button>
+
+                    {wards.map((ward) => {
+                      const isCompleted = completedWardIds.has(
+                        String(ward.ward_id),
+                      );
+                      const isDisabled = !Number(ward.is_active) || isCompleted;
+                      const isSelected =
+                        String(ward.ward_id) === String(selectedWardId);
+
+                      return (
+                        <button
+                          type="button"
+                          key={ward.ward_id}
+                          disabled={isDisabled}
+                          className={`dropdown-item rounded py-2 text-start ${
+                            isSelected ? "active" : ""
+                          } ${isDisabled ? "text-muted opacity-75" : ""}`}
+                          style={{
+                            whiteSpace: "normal",
+                            overflowWrap: "anywhere",
+                            cursor: isDisabled ? "not-allowed" : "pointer",
+                          }}
+                          onClick={() => {
+                            if (isDisabled) return;
+                            chooseWard(String(ward.ward_id));
+                            setOpenWardPicker(false);
+                          }}
+                        >
+                          {ward.ward_code} · {ward.ward_name}
+                          {isCompleted
+                            ? " · สร้าง QR ครบแล้ว"
+                            : Number(ward.is_active)
+                              ? ""
+                              : " · ปิดใช้งาน"}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="col-12">
               <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
@@ -1541,12 +1628,13 @@ function QrManagement() {
                                   </span>
                                 </label>
 
-                                {/* รายการเตียงเรียง 3 คอลัมน์ */}
+                                {/* รายการเตียงเรียง 2 คอลัมน์ */}
                                 <div
                                   style={{
                                     display: "grid",
-                                    gridTemplateColumns:
-                                      "repeat(3, minmax(0, 1fr))",
+                                    gridTemplateColumns: isMobile
+                                      ? "repeat(2, minmax(0, 1fr))"
+                                      : "repeat(3, minmax(0, 1fr))",
                                     gap: "8px 12px",
                                   }}
                                 >
@@ -1571,7 +1659,14 @@ function QrManagement() {
                                             )
                                           }
                                         />
-                                        <span className="text-truncate">
+                                        <span
+                                          style={{
+                                            whiteSpace: "normal",
+                                            overflowWrap: "anywhere",
+                                            lineHeight: 1.35,
+                                            fontSize: isMobile ? 13 : 14,
+                                          }}
+                                        >
                                           {code.bed_name ||
                                             "ไม่ผูกเตียง · เลือกเตียงเอง"}
                                         </span>
@@ -1611,7 +1706,7 @@ function QrManagement() {
                                 ? ` (${selectedCodes.length})`
                                 : ""}
                             </button>
-                            
+
                             <button
                               type="button"
                               className="btn btn-sm btn-outline-danger"
@@ -1911,7 +2006,20 @@ function Dashboard() {
   const [months, setMonths] = useState(12);
   const [buildingFilter, setBuildingFilter] = useState("");
   const [selectedBuilding, setSelectedBuilding] = useState("");
+  const [hiddenLabels, setHiddenLabels] = useState([]);
 
+  // รีเซ็ตรายการที่ซ่อนเมื่อเปลี่ยนอาคารหรือตัวกรอง
+  useEffect(() => {
+    setHiddenLabels([]);
+  }, [selectedBuilding, buildingFilter]);
+
+  const toggleDatasetVisibility = (label) => {
+    setHiddenLabels((prev) =>
+      prev.includes(label)
+        ? prev.filter((item) => item !== label)
+        : [...prev, label],
+    );
+  };
   const formatRoomLabel = (roomName, buildingName) => {
     if (!roomName) return "";
     if (!buildingName) return roomName;
@@ -1978,23 +2086,27 @@ function Dashboard() {
     data &&
     (selectedBuilding
       ? {
-    labels: chartMonths,
+          labels: chartMonths,
           datasets: [
             ...new Set(data.room_monthly.map((item) => item.room_name)),
-          ].map((room, index) => ({
-            label: formatRoomLabel(room, selectedBuilding),
-            data: chartMonths.map((month) => {
-              const item = data.room_monthly.find(
-                (row) => row.month === month && row.room_name === room,
-              );
-              return item ? Number(item.average_score) : null;
-            }),
-            backgroundColor: colors[index % colors.length],
-            borderRadius: 4,
-          })),
+          ].map((room, index) => {
+            const displayLabel = formatRoomLabel(room, selectedBuilding);
+            return {
+              label: displayLabel,
+              data: chartMonths.map((month) => {
+                const item = data.room_monthly.find(
+                  (row) => row.month === month && row.room_name === room,
+                );
+                return item ? Number(item.average_score) : null;
+              }),
+              backgroundColor: colors[index % colors.length],
+              borderRadius: 4,
+              hidden: hiddenLabels.includes(displayLabel),
+            };
+          }),
         }
       : {
-         labels: chartMonths,
+          labels: chartMonths,
           datasets: visibleBuildings.map((building, index) => ({
             label: building,
             data: chartMonths.map((month) => {
@@ -2005,6 +2117,7 @@ function Dashboard() {
             }),
             backgroundColor: colors[index % colors.length],
             borderRadius: 4,
+            hidden: hiddenLabels.includes(building),
           })),
         });
 
@@ -2132,23 +2245,23 @@ function Dashboard() {
                 <div className="dashboard-chart">
                   <Bar
                     data={chartData}
-                    options={
-                      selectedBuilding
-                        ? chartOptions
-                        : {
-                            ...chartOptions,
-                            onClick: (_, elements) => {
-                              if (elements.length > 0) {
-                                const idx = elements[0].datasetIndex;
-                                const clickedBuilding =
-                                  chartData.datasets?.[idx]?.label;
-                                if (clickedBuilding) {
-                                  setSelectedBuilding(clickedBuilding);
-                                }
-                              }
-                            },
-                          }
-                    }
+                    options={{
+                      ...chartOptions,
+                      // คลิกแท่งกราฟได้เฉพาะตอนแสดงภาพรวมอาคาร
+                      // เมื่อเข้ามาดูรายการเตียงแล้ว การคลิกแท่งกราฟจะไม่เปลี่ยน
+                      // สถานะการแสดงผลของ Dataset; ให้ซ่อน/แสดงผ่าน Legend ด้านล่างเท่านั้น
+                      onClick: (_, elements) => {
+                        if (selectedBuilding || elements.length === 0) return;
+
+                        const idx = elements[0].datasetIndex;
+                        const clickedBuilding =
+                          chartData.datasets?.[idx]?.label;
+
+                        if (clickedBuilding) {
+                          setSelectedBuilding(clickedBuilding);
+                        }
+                      },
+                    }}
                   />
                   {!chartData.datasets.some((dataset) =>
                     dataset.data.some((value) => value !== null),
@@ -2158,28 +2271,46 @@ function Dashboard() {
                     </div>
                   )}
                 </div>
-
                 <div className="custom-legend-box">
-                  {chartData.datasets.map((dataset, idx) => (
-                    <div
-                      className="custom-legend-item"
-                      key={`${dataset.label}-${idx}`}
-                    >
-                      <span
-                        className="custom-legend-swatch"
+                  {chartData.datasets.map((dataset, idx) => {
+                    const isHidden = hiddenLabels.includes(dataset.label);
+                    return (
+                      <button
+                        type="button"
+                        className={`custom-legend-item ${isHidden ? "is-hidden" : ""}`}
+                        key={`${dataset.label}-${idx}`}
+                        onClick={() => toggleDatasetVisibility(dataset.label)}
+                        aria-pressed={isHidden}
                         style={{
-                          backgroundColor: Array.isArray(
-                            dataset.backgroundColor,
-                          )
-                            ? dataset.backgroundColor[0]
-                            : dataset.backgroundColor,
+                          background: "transparent",
+                          border: "none",
+                          padding: 0,
+                          textAlign: "left",
+                          cursor: "pointer",
+                          opacity: isHidden ? 0.45 : 1,
                         }}
-                      />
-                      <span className="custom-legend-label">
-                        {dataset.label}
-                      </span>
-                    </div>
-                  ))}
+                      >
+                        <span
+                          className="custom-legend-swatch"
+                          style={{
+                            backgroundColor: Array.isArray(
+                              dataset.backgroundColor,
+                            )
+                              ? dataset.backgroundColor[0]
+                              : dataset.backgroundColor,
+                          }}
+                        />
+                        <span
+                          className="custom-legend-label"
+                          style={{
+                            textDecoration: isHidden ? "line-through" : "none",
+                          }}
+                        >
+                          {dataset.label}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -2232,8 +2363,7 @@ function Dashboard() {
     </>
   );
 }
-      
-         
+
 function Evaluations() {
   const [data, setData] = useState({ data: [], pagination: {} });
   const [wards, setWards] = useState([]);
