@@ -1166,6 +1166,105 @@ function QrManagement() {
 
   return (
     <>
+      <style>{`
+        /* Mobile-only layout for the Ward QR cards.
+           Desktop layout continues to use the original Bootstrap flex rules. */
+        @media (max-width: 768px) {
+          .ward-qr-card {
+            min-width: 0;
+          }
+
+          .ward-qr-header {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr);
+            align-items: start !important;
+            justify-content: stretch !important;
+            gap: 10px !important;
+          }
+
+          .ward-qr-title {
+            width: 100%;
+            min-width: 0;
+            overflow-wrap: anywhere;
+            line-height: 1.5;
+          }
+
+          .ward-qr-title b {
+            overflow-wrap: anywhere;
+          }
+
+          .ward-qr-title .status {
+            display: inline-block;
+            margin-top: 3px;
+            white-space: nowrap;
+          }
+
+          .ward-qr-actions {
+            width: 100%;
+            min-width: 0;
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: center;
+            gap: 6px !important;
+          }
+
+          .ward-qr-actions select {
+            flex: 1 1 0%;
+            width: auto !important;
+            min-width: 0 !important;
+            padding-left: 10px;
+            padding-right: 28px;
+            font-size: 14px;
+          }
+
+          .ward-qr-actions .btn {
+            flex: 0 0 auto;
+            width: auto;
+            white-space: nowrap;
+            padding-left: 10px;
+            padding-right: 10px;
+            font-size: 13px;
+          }
+
+          .ward-qr-edit-button {
+            flex: 0 0 auto;
+            width: auto;
+          }
+
+          .ward-qr-content {
+            width: 100%;
+            min-width: 0;
+            margin-top: 14px !important;
+          }
+
+          .ward-qr-content .qr-picker-container,
+          .ward-qr-content .qr-picker-container > button {
+            width: 100%;
+            min-width: 0;
+          }
+
+          .ward-qr-content .qr-picker-container > button {
+            text-align: left;
+            overflow-wrap: anywhere;
+          }
+
+          .ward-qr-print-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px !important;
+          }
+
+          .ward-qr-print-actions .status {
+            flex: 0 0 auto;
+          }
+
+          .ward-qr-print-actions .btn {
+            flex: 1 1 auto;
+            min-width: max-content;
+          }
+        }
+      `}</style>
       {Object.values(openQrPickerByWard).some(Boolean) && (
         <div
           aria-hidden="true"
@@ -1480,9 +1579,9 @@ function QrManagement() {
         <div className="row g-3 mt-1">
           {wardGroups.map(({ ward, codes: wardCodes, selectedCode }) => (
             <div className="col-xl-6" key={ward.ward_id}>
-              <div className="border rounded p-3 h-100">
-                <div className="d-flex align-items-center justify-content-between gap-2">
-                  <div>
+              <div className="border rounded p-3 h-100 ward-qr-card">
+                <div className="d-flex align-items-center justify-content-between gap-2 ward-qr-header">
+                  <div className="ward-qr-title">
                     <b>
                       {ward.ward_code} · {ward.ward_name}
                     </b>
@@ -1493,7 +1592,7 @@ function QrManagement() {
                     </span>
                   </div>
                   {editingWard?.ward_id === ward.ward_id ? (
-                    <div className="d-flex align-items-center gap-2">
+                    <div className="d-flex align-items-center gap-2 ward-qr-actions">
                       <select
                         className="form-select form-select-sm"
                         aria-label="สถานะ Ward"
@@ -1535,7 +1634,7 @@ function QrManagement() {
                   ) : (
                     <button
                       type="button"
-                      className="btn btn-sm btn-outline-primary"
+                      className="btn btn-sm btn-outline-primary ward-qr-edit-button"
                       disabled={busy}
                       onClick={() =>
                         setEditingWard({
@@ -1548,7 +1647,7 @@ function QrManagement() {
                     </button>
                   )}
                 </div>
-                <div className="mt-2">
+                <div className="mt-2 ward-qr-content">
                   <label className="form-label">เลือก QR Code / เตียง</label>
                   {(() => {
                     const selectedCodes = getSelectedCodesForWard(
@@ -1679,7 +1778,7 @@ function QrManagement() {
                         </div>
 
                         {wardCodes.length > 0 && (
-                          <div className="d-flex gap-2 flex-wrap align-items-center mt-3">
+                          <div className="d-flex gap-2 flex-wrap align-items-center mt-3 ward-qr-print-actions">
                             <span className="status status-muted">
                               เลือกแล้ว {selectedCodes.length} /{" "}
                               {wardCodes.length} รายการ
@@ -2060,26 +2159,26 @@ function Dashboard() {
 
   const colors = [
     "#0062ff",
-    "#e3a32f",
-    "#37a27a",
+    "#ffcc00",
+    "#e100f1",
     "#7e50ce",
     "#df6f6f",
-    "#39a1b5",
+    "#007087",
     "#5f76eb",
     "#78899f",
-    "#e67e22",
-    "#32f181",
-    "#00cda4",
-    "#c0392b",
-    "#5c6bc0",
+    "#ff7700",
+    "#008638",
+    "#00b3ff",
+    "#ff1900",
+    "#293476",
     "#b7a199",
     "#afb42b",
-    "#533277",
+    "#35125a",
     "#30decd",
     "#74471b",
     "#e74c3c",
-    "#efd469",
-    "#c396e7",
+    "#51ff00",
+    "#c885ff",
   ];
 
   const chartData =
@@ -2376,6 +2475,7 @@ function Evaluations() {
   });
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
+  const [openFilterWardPicker, setOpenFilterWardPicker] = useState(false);
   const load = (requestedPage = page) =>
     api
       .get("/admin/evaluations", {
@@ -2434,20 +2534,67 @@ function Evaluations() {
             }
           />
         </div>
-        <select
-          className="form-select"
-          value={filters.ward_id}
-          onChange={(event) =>
-            setFilters({ ...filters, ward_id: event.target.value })
-          }
-        >
-          <option value="">ทุก Ward</option>
-          {wards.map((ward) => (
-            <option key={ward.ward_id} value={ward.ward_id}>
-              {ward.ward_name}
-            </option>
-          ))}
-        </select>
+        <div className="position-relative ward-filter-picker">
+          <button
+            type="button"
+            className="form-select text-start"
+            aria-label="กรองตาม Ward"
+            aria-expanded={openFilterWardPicker}
+            onClick={() => setOpenFilterWardPicker((previous) => !previous)}
+          >
+            {filters.ward_id
+              ? wards.find(
+                  (ward) => String(ward.ward_id) === String(filters.ward_id),
+                )?.ward_name || "ทุก Ward"
+              : "ทุก Ward"}
+          </button>
+          {openFilterWardPicker && (
+            <div
+              className="dropdown-menu show w-100 p-1 shadow-sm ward-filter-options"
+              role="listbox"
+              style={{
+                maxHeight: 190,
+                overflowY: "auto",
+                overscrollBehavior: "contain",
+                WebkitOverflowScrolling: "touch",
+                zIndex: 30,
+              }}
+            >
+              <button
+                type="button"
+                className={`dropdown-item rounded py-2 text-start ${
+                  !filters.ward_id ? "active" : ""
+                }`}
+                onClick={() => {
+                  setFilters({ ...filters, ward_id: "" });
+                  setOpenFilterWardPicker(false);
+                }}
+              >
+                ทุก Ward
+              </button>
+              {wards.map((ward) => (
+                <button
+                  type="button"
+                  key={ward.ward_id}
+                  className={`dropdown-item rounded py-2 text-start ${
+                    String(filters.ward_id) === String(ward.ward_id)
+                      ? "active"
+                      : ""
+                  }`}
+                  onClick={() => {
+                    setFilters({
+                      ...filters,
+                      ward_id: String(ward.ward_id),
+                    });
+                    setOpenFilterWardPicker(false);
+                  }}
+                >
+                  {ward.ward_name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <select
           className="form-select"
           aria-label="กรองตามสถานะปัญหา"
