@@ -2512,6 +2512,126 @@ function Evaluations() {
   }
   return (
     <>
+      <style>{`
+        /* Fluid filter layout: adapts to desktop, tablet and phone widths. */
+        .evaluations-filter-bar {
+          display: grid;
+          width: 100%;
+          max-width: none;
+          min-width: 0;
+          grid-template-columns: repeat(
+            auto-fit,
+            minmax(min(100%, 220px), 1fr)
+          );
+          align-items: stretch;
+          gap: 10px;
+        }
+
+        .evaluations-filter-bar > *,
+        .evaluations-filter-bar .search-field,
+        .evaluations-filter-bar .ward-filter-picker {
+          width: 100%;
+          min-width: 0;
+          max-width: 100%;
+          box-sizing: border-box;
+        }
+
+        .evaluations-filter-bar .search-field input,
+        .evaluations-filter-bar > select,
+        .evaluations-filter-bar > input[type="date"] {
+          width: 100%;
+          min-width: 0;
+          max-width: 100%;
+          box-sizing: border-box;
+        }
+
+        /* Keep the selected Ward name clear of the arrow; allow wrapping
+           rather than clipping when the available width is narrow. */
+        .evaluations-filter-bar .ward-filter-picker > button {
+          display: block;
+          width: 100%;
+          min-width: 0;
+          min-height: 44px;
+          height: auto;
+          padding: 9px 36px 9px 10px;
+          font-size: 14px;
+          line-height: 1.4;
+          text-align: left;
+          white-space: normal;
+          overflow-wrap: anywhere;
+          background-position: right 10px center;
+          background-size: 12px;
+          box-sizing: border-box;
+        }
+
+        /* Ward menu: vertical scrolling only on every screen size. */
+        .evaluations-filter-bar .ward-filter-options {
+          left: 0;
+          right: auto;
+          width: 100%;
+          min-width: 0;
+          max-width: 100%;
+          max-height: min(45vh, 320px) !important;
+          overflow-x: hidden !important;
+          overflow-y: auto !important;
+          overscroll-behavior: contain;
+          -webkit-overflow-scrolling: touch;
+          box-sizing: border-box;
+        }
+
+        .evaluations-filter-bar .ward-filter-options .dropdown-item {
+          display: block;
+          width: 100%;
+          min-width: 0;
+          max-width: 100%;
+          padding: 9px 10px;
+          font-size: 14px;
+          line-height: 1.4;
+          text-align: left;
+          white-space: normal;
+          overflow-wrap: anywhere;
+          word-break: normal;
+          box-sizing: border-box;
+        }
+
+        /* Keep the compact mobile arrangement while allowing long labels
+           to wrap safely instead of being hidden underneath the arrow. */
+        @media (max-width: 768px) {
+          .evaluations-filter-bar .ward-filter-picker {
+            grid-column: 1 / -1;
+          }
+
+          .evaluations-filter-bar .ward-filter-picker > button {
+            font-size: 13px;
+            padding-left: 8px;
+            padding-right: 34px;
+            background-position: right 9px center;
+          }
+
+          .evaluations-filter-bar > select,
+          .evaluations-filter-bar > input[type="date"] {
+            font-size: 13px;
+            line-height: 1.35;
+            padding-left: 8px;
+            padding-right: 30px;
+          }
+
+          .evaluations-filter-bar .ward-filter-options {
+            max-height: 190px !important;
+          }
+
+          .evaluations-filter-bar .ward-filter-options .dropdown-item {
+            font-size: 14px;
+            padding: 8px 10px;
+          }
+        }
+
+        @media (max-width: 380px) {
+          .evaluations-filter-bar {
+            grid-template-columns: minmax(0, 1fr);
+          }
+        }
+      `}</style>
       <PageHeader
         eyebrow="FEEDBACK"
         title="ผลการประเมิน"
@@ -2523,7 +2643,7 @@ function Evaluations() {
         </button>
       </PageHeader>
       <Alert error={error} />
-      <form className="filter-bar" onSubmit={search}>
+      <form className="filter-bar evaluations-filter-bar" onSubmit={search}>
         <div className="search-field">
           <Search size={17} />
           <input
