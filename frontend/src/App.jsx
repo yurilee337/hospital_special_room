@@ -896,8 +896,11 @@ function QrManagement() {
     setSurveyPrintJob({ codes: targetCodes });
   }
 
-  async function deleteCode(code, { silent = false } = {}) {
-    const label = code.building_name || `QR Code #${code.qr_code_id}`;
+ async function deleteCode(code, { silent = false } = {}) {
+    const bedLabel = code.bed_name || "ไม่ผูกเตียง · เลือกเตียงเอง";
+    const label = code.building_name
+      ? `${code.building_name} · ${bedLabel}`
+      : `${bedLabel} (QR Code #${code.qr_code_id})`;
 
     if (!silent) {
       const confirmation = await Swal.fire({
