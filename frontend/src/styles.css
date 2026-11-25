@@ -1272,3 +1272,183 @@ a {
     height: 297mm;
   }
 }
+
+/* =====================================
+   Mobile A4 Preview - Fit to Screen
+   ย่อทั้งหน้าโดยไม่เปลี่ยนรูปแบบต้นฉบับ
+===================================== */
+
+@media screen and (max-width: 768px) {
+
+  .qr-print-preview {
+    padding: 8px;
+    overflow-x: hidden;
+  }
+
+  .qr-print-pages {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: visible;
+  }
+
+  .a4-survey-page {
+    /* คงขนาดต้นฉบับ A4 */
+    width: 210mm;
+    min-height: 297mm;
+    box-sizing: border-box;
+
+    /* ย่อทั้งหน้าให้พอดีกับจอ */
+    zoom: calc((100vw - 16px) / 210mm);
+
+    /* จัดให้อยู่ตรงกลาง */
+    margin: 0 auto 12px;
+    flex-shrink: 0;
+  }
+}
+
+/* =====================================
+   Print: คืนค่าขนาด A4 ต้นฉบับ
+===================================== */
+
+
+
+.custom-legend-box {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 18px;
+  margin-top: 14px;
+}
+
+.custom-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.custom-legend-swatch {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+.custom-legend-label {
+  line-height: 1.3;
+}
+.custom-legend-item {
+  transition: opacity 0.15s ease;
+  user-select: none;
+}
+
+.custom-legend-item:hover {
+  opacity: 0.8;
+}
+
+.custom-legend-item.is-hidden .custom-legend-label {
+  text-decoration: line-through;
+  color: #888;
+}
+/* มือถือ: แบ่ง 2 คอลัมน์ซ้าย-ขวาเท่ากัน */
+@media only screen and (max-width: 768px) {
+  .custom-legend-box {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px 12px !important;
+    justify-content: stretch !important;
+  }
+
+  .custom-legend-item {
+    display: flex !important;
+    min-width: 0 !important;
+    font-size: 12px !important;
+  }
+
+  .custom-legend-swatch {
+    flex: 0 0 24px !important;
+    width: 24px !important;
+    height: 11px !important;
+  }
+
+  .custom-legend-label {
+    overflow-wrap: anywhere;
+  }
+}
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  html,
+  body {
+    width: 210mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* ซ่อนทุกส่วนที่ไม่เกี่ยวกับหน้าตัวอย่าง
+     แต่เก็บ Container ที่ครอบหน้าตัวอย่างไว้ */
+  body *:not(:has(.qr-print-preview))
+    :not(.qr-print-preview)
+    :not(.qr-print-preview *) {
+    display: none !important;
+  }
+
+  /* ลดระยะของ Container ที่ครอบหน้าตัวอย่าง */
+  body :has(.qr-print-preview):not(.qr-print-preview) {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    min-height: 0 !important;
+  }
+
+  .qr-print-preview {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 210mm !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
+  .qr-print-actions {
+    display: none !important;
+  }
+
+  .qr-print-pages {
+    width: 210mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .a4-survey-page {
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 297mm !important;
+    max-height: 297mm !important;
+    box-sizing: border-box !important;
+    padding: 14mm 16mm !important;
+    margin: 0 !important;
+    zoom: 1 !important;
+    transform: none !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+
+  /* หน้าสุดท้ายไม่ต้องขึ้นหน้าใหม่ */
+  .a4-survey-page:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+}
