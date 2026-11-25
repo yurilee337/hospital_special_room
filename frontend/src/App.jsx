@@ -1,37 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  Link,
-  NavLink,
-  Navigate,
-  Route,
-  Routes,
-  useLocation,
-  useNavigate,
-  useParams,
-} from "react-router-dom";
-import {
-  BarChart3,
-  ClipboardList,
-  Download,
-  FileDown,
-  LogOut,
-  QrCode,
-  Search,
-  Star,
-  TriangleAlert,
-} from "lucide-react";
+
+import {Link,NavLink,Navigate,Route,Routes,useLocation,useNavigate,useParams,} from "react-router-dom";
+import {BarChart3,Check,ClipboardList,Download,Eye,EyeOff,FileDown,Lock,LogOut,QrCode,Search,Star,
+  TriangleAlert,User,Camera,ImagePlus,} from "lucide-react";
 import { Bar, Line } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Tooltip,
-  Legend,
-  Filler,
-} from "chart.js";
+import {Chart as ChartJS,CategoryScale,LinearScale,PointElement,LineElement,BarElement,Tooltip,Legend,Filler,} from "chart.js";
 import Swal from "sweetalert2";
 import { QRCodeSVG } from "qrcode.react";
 import api, { getErrorMessage } from "./services/api";
@@ -94,6 +67,35 @@ function EvaluationForm() {
   const [survey, setSurvey] = useState(null);
   const [loading, setLoading] = useState(Boolean(qrToken));
   const [categories, setCategories] = useState([]);
+
+  const [images, setImages] = useState([]);
+
+  const handleAddImages = (event) => {
+    const newFiles = Array.from(event.target.files || []);
+    if (!newFiles.length) return;
+
+    setImages((prev) => {
+      // นำรูปใหม่มาต่อท้ายรูปเดิม และจำกัดรวมกันไม่เกิน 3 รูป
+      const combined = [...prev, ...newFiles];
+      return combined.slice(0, 3);
+    });
+
+    // รีเซ็ตค่า input เพื่อให้สามารถเลือกรูปเดิมซ้ำ หรือถ่ายรูปเพิ่มได้เรื่อยๆ
+    event.target.value = "";
+  };
+
+  const removeImage = (indexToRemove) => {
+    setImages((prev) => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  const toggleCategory = (id) =>
+    setForm((previous) => ({
+      ...previous,
+      problem_category_ids: previous.problem_category_ids.includes(id)
+        ? previous.problem_category_ids.filter((item) => item !== id)
+        : [...previous.problem_category_ids, id],
+    }));
+
   const [form, setForm] = useState({
     bed_id: "",
     respondent_type: "patient",
@@ -103,12 +105,12 @@ function EvaluationForm() {
     problem_category_ids: [],
     scores: evaluationTopics.reduce((a, key) => ({ ...a, [key]: 5 }), {}),
   });
-  const [images, setImages] = useState([]);
 
   const [error, setError] = useState(
     qrToken ? "" : "กรุณาสแกน QR Code ประจำอาคารเพื่อเริ่มทำแบบประเมิน",
   );
   const [submitting, setSubmitting] = useState(false); //State สถานะกำลังส่งข้อมูล
+
   //ดักจับกรณีไม่มีรหัส QR Code
   useEffect(() => {
     if (!qrToken) {
@@ -137,19 +139,12 @@ function EvaluationForm() {
       .catch((error) => setError(getErrorMessage(error)))
       .finally(() => setLoading(false));
   }, [qrToken]); //ให้รันโค้ดทั้งหมดนี้ใหม่เฉพาะตอนที่เปิดหน้าเว็บครั้งแรก หรือตอนที่ค่า qrToken ใน URL เปลี่ยนไปเท่านั้น
-
-  const toggleCategory = (id) =>
-    setForm((previous) => ({
-      ...previous,
-      problem_category_ids: previous.problem_category_ids.includes(id)
-        ? previous.problem_category_ids.filter((item) => item !== id)
-        : [...previous.problem_category_ids, id],
-    }));
-
+  const [buttonStatus, setButtonStatus] = useState("idle"); // 'idle' | 'loading' | 'success'
   async function submit(event) {
     event.preventDefault();
     setError("");
-    setSubmitting(true);
+    setButtonStatus("loading"); // 1. เริ่มอนิเมชันปุ่มหมุนๆ ตอนกำลังส่ง
+
     const data = new FormData();
     data.append("qr_token", qrToken);
     data.append("bed_id", form.bed_id);
@@ -171,28 +166,33 @@ function EvaluationForm() {
       ),
     );
     images.forEach((image) => data.append("images", image));
+
     try {
+      // ส่งข้อมูลไปหลังบ้าน
       await api.post("/evaluations", data);
 
-      // 1. เพิ่มตัวมารับผลลัพธ์จาก Swal.fire และตั้งค่าป้องกันการกดปิดนอกป๊อปอัพ
-      const result = await Swal.fire({
-        title: "ขอบคุณสำหรับความคิดเห็น",
-        text: "ส่งแบบประเมินเรียบร้อยแล้ว",
-        icon: "success",
-        confirmButtonText: "เรียบร้อย",
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-      });
+      // 2. เมื่อส่งสำเร็จ เปลี่ยนปุ่มเป็นสถานะติ๊กถูกสีเขียว
+      setButtonStatus("success");
 
-      // 2. เมื่อผู้ใช้กดปุ่ม 'เรียบร้อย' ให้รีเฟรชหน้าเว็บเพื่อออกจากแบบสอบถามทันที
-      if (result.isConfirmed) {
-        window.location.href = window.location.pathname;
-      }
+      // 3. หน่วงเวลาไว้สัก 800 มิลลิวินาที (0.8 วิ) ให้คนใช้ได้เห็นแอนิเมชันปุ่มเขียวแป๊บนึง ก่อนจะเด้ง SweetAlert
+      setTimeout(async () => {
+        const result = await Swal.fire({
+          title: "ขอบคุณสำหรับความคิดเห็น",
+          text: "ส่งแบบประเมินเรียบร้อยแล้ว",
+          icon: "success",
+          confirmButtonText: "เรียบร้อย",
+          allowOutsideClick: false,
+          allowEscapeKey: false,
+        });
+
+        if (result.isConfirmed) {
+          window.location.href = window.location.pathname;
+        }
+      }, 800);
     } catch (requestError) {
       setError(getErrorMessage(requestError));
+      setButtonStatus("idle"); // ถ้าส่งไม่ผ่าน ให้คืนค่าปุ่มกลับเป็นปกติ
       window.scrollTo({ top: 0, behavior: "smooth" });
-    } finally {
-      setSubmitting(false);
     }
   }
   return (
@@ -443,31 +443,105 @@ function EvaluationForm() {
                   }
                   placeholder="ระบุรายละเอียดปัญหา (ถ้ามี)"
                 />
+
+                {/* ส่วนปุ่มถ่ายรูปและเลือกรูปภาพ */}
                 <label className="form-label">
                   แนบรูปภาพ (JPG, PNG, WEBP ไม่เกิน 3 รูป รูปละ 5 MB)
                 </label>
-                <input
-                  className="form-control"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  multiple
-                  onChange={(event) =>
-                    setImages(Array.from(event.target.files || []).slice(0, 3))
-                  }
-                />
+                <div className="d-flex gap-2 mb-2">
+                  <label
+                    className={`btn btn-outline-primary flex-fill d-flex align-items-center justify-content-center gap-2 ${
+                      images.length >= 3 ? "disabled" : ""
+                    }`}
+                    style={{
+                      cursor: images.length >= 3 ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    <span>📷 ถ่ายรูป</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      hidden
+                      disabled={images.length >= 3}
+                      onChange={handleAddImages}
+                    />
+                  </label>
+
+                  <label
+                    className={`btn btn-outline-secondary flex-fill d-flex align-items-center justify-content-center gap-2 ${
+                      images.length >= 3 ? "disabled" : ""
+                    }`}
+                    style={{
+                      cursor: images.length >= 3 ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    <span>🖼️ เลือกจากคลังภาพ</span>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      multiple
+                      hidden
+                      disabled={images.length >= 3}
+                      onChange={handleAddImages}
+                    />
+                  </label>
+                </div>
+
                 {images.length > 0 && (
-                  <small className="text-muted d-block mt-2">
-                    เลือก {images.length} รูป
-                  </small>
+                  <div className="mt-2">
+                    <small className="text-muted d-block mb-2">
+                      เลือกแล้ว {images.length} / 3 รูป
+                    </small>
+                    <div className="d-flex gap-2 flex-wrap">
+                      {images.map((file, idx) => (
+                        <div
+                          key={`${file.name}-${idx}`}
+                          className="position-relative border rounded overflow-hidden"
+                          style={{ width: 80, height: 80 }}
+                        >
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={`preview-${idx}`}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "cover",
+                            }}
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-danger btn-sm position-absolute top-0 end-0 p-0 d-flex align-items-center justify-content-center"
+                            style={{
+                              width: 22,
+                              height: 22,
+                              borderRadius: "0 0 0 6px",
+                            }}
+                            onClick={() => removeImage(idx)}
+                            title="ลบรูปนี้"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </>
             )}
           </section>
           <button
-            className="btn btn-primary submit-button"
-            disabled={submitting || loading || !survey}
+            type="submit"
+            className={`btn btn-primary submit-button ${buttonStatus === "loading" ? "is-loading" : ""} ${buttonStatus === "success" ? "is-success" : ""}`}
+            disabled={buttonStatus !== "idle" || loading || !survey}
           >
-            {submitting ? "กำลังส่ง..." : "ส่งแบบประเมิน"}
+            {buttonStatus === "loading" ? (
+              <span className="submit-button-spinner" aria-label="กำลังส่ง" />
+            ) : buttonStatus === "success" ? (
+              <span className="submit-button-success">✓ ส่งสำเร็จ</span>
+            ) : (
+              "ส่งแบบประเมิน"
+            )}
           </button>
           <div className="privacy-note">
             ข้อมูลของคุณจะถูกนำไปใช้เพื่อพัฒนาคุณภาพบริการเท่านั้น
@@ -477,6 +551,7 @@ function EvaluationForm() {
     </main>
   );
 }
+
 function Login() {
   const navigate = useNavigate();
   const [credentials, setCredentials] = useState({
@@ -484,65 +559,362 @@ function Login() {
     password: "",
   });
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState("idle"); // 'idle' | 'loading' | 'success'
+  const [shake, setShake] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
   async function submit(event) {
     event.preventDefault();
-    setBusy(true);
+    if (status !== "idle") return;
+
+    setStatus("loading");
     setError("");
+    setShake(false);
+
     try {
       await api.post("/admin/login", credentials);
-      navigate("/admin", { replace: true });
+      setStatus("success");
+
+      // หน่วงให้เห็นแอนิเมชันติ๊กถูกสีเขียวสวยๆ ก่อนเด้งเข้าหน้า Admin
+      setTimeout(() => {
+        navigate("/admin", { replace: true });
+      }, 750);
     } catch (requestError) {
       setError(getErrorMessage(requestError));
-    } finally {
-      setBusy(false);
+      setStatus("idle");
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
     }
   }
+
   return (
-    <main className="login-page">
-      <Link to="/" className="back-link">
+    <main
+      className="login-page"
+      style={{ position: "relative", overflow: "hidden" }}
+    >
+      <style>{`
+        /* แอนิเมชันแสงพื้นหลังลอยไปมา */
+        @keyframes floatOrb1 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(40px, -50px) scale(1.12); }
+          50% { transform: translate(60px, -70px) scale(1.2); }
+          66% { transform: translate(-40px, 30px) scale(0.92); }
+        }
+        @keyframes floatOrb2 {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          25% { transform: translate(30px, 40px) scale(2.0); }
+          50% { transform: translate(-45px, -35px) scale(1.15); }
+        }
+
+        /* การ์ดเด้งเปิดพร้อมแรงสปริง */
+        @keyframes cardPopIn {
+          0% {
+            opacity: 0;
+            transform: translateY(40px) scale(0.92);
+          }
+          70% {
+            opacity: 1;
+            transform: translateY(-4px) scale(1.01);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        /* แสงวิบวับวิ่งผ่านการ์ดตอนเปิดหน้า */
+        @keyframes shimmerSweep {
+          0% { transform: translateX(-150%) skewX(-20deg); }
+          50% { transform: translateX(0) skewX(-20deg); }
+          100% { transform: translateX(250%) skewX(-20deg); }
+        }
+
+        /* แอนิเมชันโผล่ทีละชิ้น (Stagger) */
+        @keyframes itemSlideUp {
+          0% {
+            opacity: 0;
+            transform: translateY(18px);
+          }
+          50% {
+            opacity: 0.5;
+            transform: translateY(6px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        /* วงแหวนรอบโลโก้เต้นเป็นจังหวะ */
+        @keyframes pulseRing {
+          0% { transform: scale(0.95); opacity: 0.7; }
+          70% { transform: scale(1.35); opacity: 0; }
+          100% { transform: scale(1.35); opacity: 0; }
+        }
+
+        /* สั่นเตือนเมื่อรหัสผิด */
+        @keyframes shakeError {
+          0%, 100% { transform: translateX(0); }
+          20%, 60% { transform: translateX(-10px); }
+          40%, 80% { transform: translateX(10px); }
+        }
+
+        @keyframes spinLoader {
+          to { transform: rotate(360deg); }
+        }
+
+        .login-bg-orb-1 {
+          position: absolute;
+          top: -80px;
+          right: -60px;
+          width: 340px;
+          height: 340px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(13,110,253,0.18) 0%, rgba(13,110,253,0) 70%);
+          filter: blur(20px);
+          animation: floatOrb1 11s ease-in-out infinite;
+          pointer-events: none;
+        }
+
+        .login-bg-orb-2 {
+          position: absolute;
+          bottom: -100px;
+          left: -80px;
+          width: 380px;
+          height: 380px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(25,135,84,0.15) 0%, rgba(25,135,84,0) 70%);
+          filter: blur(24px);
+          animation: floatOrb2 14s ease-in-out infinite;
+          pointer-events: none;
+        }
+
+        .login-card-deluxe {
+          position: relative;
+          overflow: hidden;
+          background: rgba(255, 255, 255, 0.92) !important;
+          backdrop-filter: blur(14px);
+          border: 1px solid rgba(255, 255, 255, 0.8);
+          box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08);
+          animation: cardPopIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .login-card-deluxe::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 50%;
+          height: 100%;
+          background: linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.65) 50%,
+            rgba(255, 255, 255, 0) 100%
+          );
+          animation: shimmerSweep 1.2s ease-out 0.3s forwards;
+          pointer-events: none;
+        }
+
+        .login-card-shake {
+          animation: shakeError 0.45s ease-in-out !important;
+        }
+
+        .stagger-1 { opacity: 0; animation: itemSlideUp 0.5s ease-out 0.12s forwards; }
+        .stagger-2 { opacity: 0; animation: itemSlideUp 0.5s ease-out 0.22s forwards; }
+        .stagger-3 { opacity: 0; animation: itemSlideUp 0.5s ease-out 0.32s forwards; }
+        .stagger-4 { opacity: 0; animation: itemSlideUp 0.5s ease-out 0.42s forwards; }
+        .stagger-5 { opacity: 0; animation: itemSlideUp 0.5s ease-out 0.52s forwards; }
+
+        .logo-wrapper {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 10px;
+        }
+        .logo-wrapper::after {
+          content: "";
+          position: absolute;
+          inset: -4px;
+          border-radius: 50%;
+          border: 2px solid rgba(13, 110, 253, 0.35);
+          animation: pulseRing 2.5s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+        }
+
+        .input-icon-group {
+          position: relative;
+        }
+        .input-icon-left {
+          position: absolute;
+          left: 13px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #6c757d;
+          transition: color 0.2s ease, transform 0.2s ease;
+          pointer-events: none;
+        }
+        .input-icon-group:focus-within .input-icon-left {
+          color: #0d6efd;
+          transform: translateY(-50%) scale(1.1);
+        }
+        .input-with-icon {
+          padding-left: 40px !important;
+          transition: all 0.25s ease;
+        }
+        .input-with-icon:focus {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 14px rgba(13, 110, 253, 0.14) !important;
+        }
+
+        .eye-toggle-btn {
+          position: absolute;
+          right: 10px;
+          top: 50%;
+          transform: translateY(-50%);
+          background: transparent;
+          border: none;
+          color: #6c757d;
+          padding: 4px;
+          display: flex;
+          align-items: center;
+          cursor: pointer;
+          transition: color 0.2s ease, transform 0.15s ease;
+        }
+        .eye-toggle-btn:hover {
+          color: #0d6efd;
+          transform: translateY(-50%) scale(1.12);
+        }
+      `}</style>
+
+      {/* วงแสงพื้นหลังเคลื่อนไหว */}
+      <div className="login-bg-orb-1" />
+      <div className="login-bg-orb-2" />
+
+      <Link to="/" className="back-link stagger-1" style={{ zIndex: 2 }}>
         ← กลับหน้าประเมิน
       </Link>
-      <form className="login-card" onSubmit={submit}>
-        <img
-          className="hospital-logo"
-          src="/hospital-logo.jpg"
-          alt="โลโก้โรงพยาบาลร้อยเอ็ด"
-          width="38"
-          height="38"
-        />
-        <div className="eyebrow">ADMINISTRATOR</div>
-        <h1>เข้าสู่ระบบ</h1>
-        <p>ระบบจัดการประเมินห้องพิเศษ</p>
+
+      <form
+        className={`login-card login-card-deluxe ${shake ? "login-card-shake" : ""}`}
+        onSubmit={submit}
+        style={{ zIndex: 2 }}
+      >
+        <div className="stagger-1">
+          <div className="logo-wrapper">
+            <img
+              className="hospital-logo"
+              src="/hospital-logo.jpg"
+              alt="โลโก้โรงพยาบาลร้อยเอ็ด"
+              width="44"
+              height="44"
+              style={{ margin: 0 }}
+            />
+          </div>
+          <div className="eyebrow">ADMINISTRATOR</div>
+          <h1>เข้าสู่ระบบ</h1>
+          <p>ระบบจัดการประเมินห้องพิเศษ</p>
+        </div>
+
         <Alert error={error} />
-        <label className="form-label">ชื่อผู้ใช้</label>
-        <input
-          className="form-control mb-3"
-          autoComplete="username"
-          value={credentials.username}
-          onChange={(event) =>
-            setCredentials({ ...credentials, username: event.target.value })
-          }
-          required
-        />
-        <label className="form-label">รหัสผ่าน</label>
-        <input
-          className="form-control mb-4"
-          type="password"
-          autoComplete="current-password"
-          value={credentials.password}
-          onChange={(event) =>
-            setCredentials({ ...credentials, password: event.target.value })
-          }
-          required
-        />
-        <button className="btn btn-primary w-100" disabled={busy}>
-          {busy ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
-        </button>
+
+        <div className="stagger-2 mb-3">
+          <label className="form-label">ชื่อผู้ใช้</label>
+          <div className="input-icon-group">
+            <User size={17} className="input-icon-left" />
+            <input
+              className="form-control input-with-icon"
+              autoComplete="username"
+              placeholder="กรอกชื่อผู้ใช้"
+              value={credentials.username}
+              onChange={(event) =>
+                setCredentials({ ...credentials, username: event.target.value })
+              }
+              required
+            />
+          </div>
+        </div>
+
+        <div className="stagger-3 mb-4">
+          <label className="form-label">รหัสผ่าน</label>
+          <div className="input-icon-group">
+            <Lock size={17} className="input-icon-left" />
+            <input
+              className="form-control input-with-icon"
+              style={{ paddingRight: "40px" }}
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              placeholder="กรอกรหัสผ่าน"
+              value={credentials.password}
+              onChange={(event) =>
+                setCredentials({ ...credentials, password: event.target.value })
+              }
+              required
+            />
+            <button
+              type="button"
+              className="eye-toggle-btn"
+              onClick={() => setShowPassword((prev) => !prev)}
+              title={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+            >
+              {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+            </button>
+          </div>
+        </div>
+
+        <div className="stagger-4">
+          <button
+            type="submit"
+            disabled={status !== "idle"}
+            style={{
+              width: status === "loading" ? "46px" : "100%",
+              height: "46px",
+              backgroundColor: status === "success" ? "#198754" : "#0d6efd",
+              color: "#fff",
+              border: "none",
+              borderRadius: status === "loading" ? "50%" : "8px",
+              fontWeight: 600,
+              cursor: status === "idle" ? "pointer" : "default",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              margin: "0 auto",
+              transition: "all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)",
+              boxShadow:
+                status === "idle"
+                  ? "0 6px 18px rgba(13, 110, 253, 0.25)"
+                  : "none",
+            }}
+          >
+            {status === "idle" && <span>เข้าสู่ระบบ</span>}
+
+            {status === "loading" && (
+              <span
+                style={{
+                  width: "20px",
+                  height: "20px",
+                  border: "2.5px solid rgba(255,255,255,0.3)",
+                  borderTopColor: "#fff",
+                  borderRadius: "50%",
+                  animation: "spinLoader 0.6s linear infinite",
+                }}
+              />
+            )}
+
+            {status === "success" && (
+              <>
+                <Check size={20} />
+                <span>เข้าสู่ระบบสำเร็จ!</span>
+              </>
+            )}
+          </button>
+        </div>
       </form>
     </main>
   );
 }
+
 function AdminLayout({ children }) {
   const navigate = useNavigate();
   const [admin, setAdmin] = useState(null);
@@ -631,8 +1003,7 @@ function PageHeader({ eyebrow, title, description, children }) {
 function QrManagement() {
   const [wards, setWards] = useState([]);
   const [codes, setCodes] = useState([]);
-  const [problemCategories, setProblemCategories] = useState([]); // เก็บหมวดหมู่ปัญหาสำหรับพิมพ์ลง A4
-  // 1. State form เริ่มต้น (แยก include_unassigned ออกจาก selected_bed_ids)
+  const [problemCategories, setProblemCategories] = useState([]);
   const [form, setForm] = useState({
     qr_code_id: null,
     building_name: "",
@@ -645,7 +1016,7 @@ function QrManagement() {
   const [previewCodes, setPreviewCodes] = useState([]);
   const [showCreatedPreview, setShowCreatedPreview] = useState(false);
   const [printJob, setPrintJob] = useState(null);
-  const [surveyPrintJob, setSurveyPrintJob] = useState(null); // State สำหรับหน้าพิมพ์แบบประเมิน A4
+  const [surveyPrintJob, setSurveyPrintJob] = useState(null);
   const [viewQrByWard, setViewQrByWard] = useState({});
   const [selectedQrIdsByWard, setSelectedQrIdsByWard] = useState({});
   const [openQrPickerByWard, setOpenQrPickerByWard] = useState({});
@@ -686,7 +1057,6 @@ function QrManagement() {
     };
   }, []);
 
-  // ปิด Dropdown เลือก QR Code / เตียง เมื่อคลิกหรือแตะภายนอกรายการ
   useEffect(() => {
     function handleOutsidePointerDown(event) {
       const target = event.target;
@@ -780,7 +1150,6 @@ function QrManagement() {
 
     setForm((previous) => ({
       ...previous,
-      // เปลี่ยนเฉพาะเตียงที่ยังไม่มี QR โดยไม่แตะตัวเลือก "ไม่ผูกเตียง"
       selected_bed_ids: allSelected
         ? previous.selected_bed_ids.filter(
             (id) => !availableIds.includes(String(id)),
@@ -891,12 +1260,12 @@ function QrManagement() {
       setBusy(false);
     }
   }
-  // ฟังก์ชันเปิดหน้าตัวอย่างก่อนพิมพ์แบบประเมิน A4 ตาม Ward และเตียงที่เลือก
+
   function printSurveyForms(targetCodes) {
     setSurveyPrintJob({ codes: targetCodes });
   }
 
- async function deleteCode(code, { silent = false } = {}) {
+  async function deleteCode(code, { silent = false } = {}) {
     const bedLabel = code.bed_name || "ไม่ผูกเตียง · เลือกเตียงเอง";
     const label = code.building_name
       ? `${code.building_name} · ${bedLabel}`
@@ -1170,13 +1539,8 @@ function QrManagement() {
   return (
     <>
       <style>{`
-        /* Mobile-only layout for the Ward QR cards.
-           Desktop layout continues to use the original Bootstrap flex rules. */
         @media (max-width: 768px) {
-          .ward-qr-card {
-            min-width: 0;
-          }
-
+          .ward-qr-card { min-width: 0; }
           .ward-qr-header {
             display: grid !important;
             grid-template-columns: minmax(0, 1fr);
@@ -1184,88 +1548,24 @@ function QrManagement() {
             justify-content: stretch !important;
             gap: 10px !important;
           }
-
-          .ward-qr-title {
-            width: 100%;
-            min-width: 0;
-            overflow-wrap: anywhere;
-            line-height: 1.5;
-          }
-
-          .ward-qr-title b {
-            overflow-wrap: anywhere;
-          }
-
-          .ward-qr-title .status {
-            display: inline-block;
-            margin-top: 3px;
-            white-space: nowrap;
-          }
-
+          .ward-qr-title { width: 100%; min-width: 0; overflow-wrap: anywhere; line-height: 1.5; }
+          .ward-qr-title b { overflow-wrap: anywhere; }
+          .ward-qr-title .status { display: inline-block; margin-top: 3px; white-space: nowrap; }
           .ward-qr-actions {
-            width: 100%;
-            min-width: 0;
-            display: flex;
-            flex-wrap: nowrap;
-            align-items: center;
-            gap: 6px !important;
+            width: 100%; min-width: 0; display: flex; flex-wrap: nowrap; align-items: center; gap: 6px !important;
           }
-
           .ward-qr-actions select {
-            flex: 1 1 0%;
-            width: auto !important;
-            min-width: 0 !important;
-            padding-left: 10px;
-            padding-right: 28px;
-            font-size: 14px;
+            flex: 1 1 0%; width: auto !important; min-width: 0 !important; padding-left: 10px; padding-right: 28px; font-size: 14px;
           }
-
-          .ward-qr-actions .btn {
-            flex: 0 0 auto;
-            width: auto;
-            white-space: nowrap;
-            padding-left: 10px;
-            padding-right: 10px;
-            font-size: 13px;
-          }
-
-          .ward-qr-edit-button {
-            flex: 0 0 auto;
-            width: auto;
-          }
-
-          .ward-qr-content {
-            width: 100%;
-            min-width: 0;
-            margin-top: 14px !important;
-          }
-
+          .ward-qr-actions .btn { flex: 0 0 auto; width: auto; white-space: nowrap; padding-left: 10px; padding-right: 10px; font-size: 13px; }
+          .ward-qr-edit-button { flex: 0 0 auto; width: auto; }
+          .ward-qr-content { width: 100%; min-width: 0; margin-top: 14px !important; }
           .ward-qr-content .qr-picker-container,
-          .ward-qr-content .qr-picker-container > button {
-            width: 100%;
-            min-width: 0;
-          }
-
-          .ward-qr-content .qr-picker-container > button {
-            text-align: left;
-            overflow-wrap: anywhere;
-          }
-
-          .ward-qr-print-actions {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 8px !important;
-          }
-
-          .ward-qr-print-actions .status {
-            flex: 0 0 auto;
-          }
-
-          .ward-qr-print-actions .btn {
-            flex: 1 1 auto;
-            min-width: max-content;
-          }
+          .ward-qr-content .qr-picker-container > button { width: 100%; min-width: 0; }
+          .ward-qr-content .qr-picker-container > button { text-align: left; overflow-wrap: anywhere; }
+          .ward-qr-print-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px !important; }
+          .ward-qr-print-actions .status { flex: 0 0 auto; }
+          .ward-qr-print-actions .btn { flex: 1 1 auto; min-width: max-content; }
         }
       `}</style>
       {Object.values(openQrPickerByWard).some(Boolean) && (
@@ -1708,7 +2008,6 @@ function QrManagement() {
                                   zIndex: 20,
                                 }}
                               >
-                                {/* แถวเลือกทั้งหมด */}
                                 <label
                                   className="d-flex align-items-center gap-2 pb-2 mb-2 border-bottom"
                                   style={{ cursor: "pointer" }}
@@ -1730,7 +2029,6 @@ function QrManagement() {
                                   </span>
                                 </label>
 
-                                {/* รายการเตียงเรียง 2 คอลัมน์ */}
                                 <div
                                   style={{
                                     display: "grid",
@@ -1848,7 +2146,6 @@ function QrManagement() {
           </button>
         )}
       </section>
-      {/* หน้าต่างตัวอย่างก่อนพิมพ์ QR Code เดิม */}
       {printJob && (
         <div
           className="qr-print-preview"
@@ -1904,7 +2201,6 @@ function QrManagement() {
           </div>
         </div>
       )}
-      {/* หน้าต่างตัวอย่างก่อนพิมพ์แบบประเมินรูปแบบกระดาษ A4 */}
       {surveyPrintJob && (
         <div
           className="qr-print-preview"
@@ -1936,7 +2232,6 @@ function QrManagement() {
                   : code.building_name;
               return (
                 <div className="a4-survey-page" key={code.qr_code_id}>
-                  {/* ส่วนหัวเอกสาร */}
                   <div className="a4-header">
                     <img
                       src="/hospital-logo.jpg"
@@ -1952,7 +2247,6 @@ function QrManagement() {
                       </p>
                     </div>
                   </div>
-                  {/* ส่วนที่ 1: ข้อมูลการเข้าพัก */}
                   <div className="a4-section">
                     <div className="a4-section-title">
                       ส่วนที่ 1 : ข้อมูลการเข้าพัก
@@ -1985,7 +2279,6 @@ function QrManagement() {
                       </span>
                     </div>
                   </div>
-                  {/* ส่วนที่ 2: คะแนนความพึงพอใจ (ช่องว่างเปล่า 1-5 ไม่เลือกค่าเริ่มต้น) */}
                   <div className="a4-section">
                     <div className="a4-section-title">
                       ส่วนที่ 2 : ความพึงพอใจต่อบริการ (กรุณาทำเครื่องหมาย ✓
@@ -2035,7 +2328,6 @@ function QrManagement() {
                       </tbody>
                     </table>
                   </div>
-                  {/* ส่วนที่ 3: การแจ้งปัญหา (แสดงหมวดหมู่ย่อยทั้งหมดให้เลือกติ๊กได้ทันที) */}
                   <div className="a4-section">
                     <div className="a4-section-title">
                       ส่วนที่ 3 : การแจ้งปัญหาหรือสิ่งที่ขาดเหลือ
@@ -2079,7 +2371,6 @@ function QrManagement() {
                     </div>
                   </div>
 
-                  {/* ส่วนที่ 4: ข้อเสนอแนะ */}
                   <div className="a4-section">
                     <div className="a4-section-title">
                       ส่วนที่ 4 : ข้อเสนอแนะเพิ่มเติม
@@ -2102,15 +2393,15 @@ function QrManagement() {
     </>
   );
 }
+
 function Dashboard() {
-  const [data, setData] = useState(null); //เก็บข้อมูลสถิติและรายงานทั้งหมดที่ดึงมาจาก API
+  const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [months, setMonths] = useState(12);
   const [buildingFilter, setBuildingFilter] = useState("");
   const [selectedBuilding, setSelectedBuilding] = useState("");
   const [hiddenLabels, setHiddenLabels] = useState([]);
 
-  // รีเซ็ตรายการที่ซ่อนเมื่อเปลี่ยนอาคารหรือตัวกรอง
   useEffect(() => {
     setHiddenLabels([]);
   }, [selectedBuilding, buildingFilter]);
@@ -2349,9 +2640,6 @@ function Dashboard() {
                     data={chartData}
                     options={{
                       ...chartOptions,
-                      // คลิกแท่งกราฟได้เฉพาะตอนแสดงภาพรวมอาคาร
-                      // เมื่อเข้ามาดูรายการเตียงแล้ว การคลิกแท่งกราฟจะไม่เปลี่ยน
-                      // สถานะการแสดงผลของ Dataset; ให้ซ่อน/แสดงผ่าน Legend ด้านล่างเท่านั้น
                       onClick: (_, elements) => {
                         if (selectedBuilding || elements.length === 0) return;
 
@@ -2516,7 +2804,6 @@ function Evaluations() {
   return (
     <>
       <style>{`
-        /* Fluid filter layout: adapts to desktop, tablet and phone widths. */
         .evaluations-filter-bar {
           display: grid;
           width: 100%;
@@ -2529,7 +2816,6 @@ function Evaluations() {
           align-items: stretch;
           gap: 10px;
         }
-
         .evaluations-filter-bar > *,
         .evaluations-filter-bar .search-field,
         .evaluations-filter-bar .ward-filter-picker {
@@ -2538,7 +2824,6 @@ function Evaluations() {
           max-width: 100%;
           box-sizing: border-box;
         }
-
         .evaluations-filter-bar .search-field input,
         .evaluations-filter-bar > select,
         .evaluations-filter-bar > input[type="date"] {
@@ -2547,9 +2832,6 @@ function Evaluations() {
           max-width: 100%;
           box-sizing: border-box;
         }
-
-        /* Keep the selected Ward name clear of the arrow; allow wrapping
-           rather than clipping when the available width is narrow. */
         .evaluations-filter-bar .ward-filter-picker > button {
           display: block;
           width: 100%;
@@ -2566,8 +2848,6 @@ function Evaluations() {
           background-size: 12px;
           box-sizing: border-box;
         }
-
-        /* Ward menu: vertical scrolling only on every screen size. */
         .evaluations-filter-bar .ward-filter-options {
           left: 0;
           right: auto;
@@ -2581,7 +2861,6 @@ function Evaluations() {
           -webkit-overflow-scrolling: touch;
           box-sizing: border-box;
         }
-
         .evaluations-filter-bar .ward-filter-options .dropdown-item {
           display: block;
           width: 100%;
@@ -2596,43 +2875,16 @@ function Evaluations() {
           word-break: normal;
           box-sizing: border-box;
         }
-
-        /* Keep the compact mobile arrangement while allowing long labels
-           to wrap safely instead of being hidden underneath the arrow. */
         @media (max-width: 768px) {
-          .evaluations-filter-bar .ward-filter-picker {
-            grid-column: 1 / -1;
-          }
-
-          .evaluations-filter-bar .ward-filter-picker > button {
-            font-size: 13px;
-            padding-left: 8px;
-            padding-right: 34px;
-            background-position: right 9px center;
-          }
-
+          .evaluations-filter-bar .ward-filter-picker { grid-column: 1 / -1; }
+          .evaluations-filter-bar .ward-filter-picker > button { font-size: 13px; padding-left: 8px; padding-right: 34px; background-position: right 9px center; }
           .evaluations-filter-bar > select,
-          .evaluations-filter-bar > input[type="date"] {
-            font-size: 13px;
-            line-height: 1.35;
-            padding-left: 8px;
-            padding-right: 30px;
-          }
-
-          .evaluations-filter-bar .ward-filter-options {
-            max-height: 190px !important;
-          }
-
-          .evaluations-filter-bar .ward-filter-options .dropdown-item {
-            font-size: 14px;
-            padding: 8px 10px;
-          }
+          .evaluations-filter-bar > input[type="date"] { font-size: 13px; line-height: 1.35; padding-left: 8px; padding-right: 30px; }
+          .evaluations-filter-bar .ward-filter-options { max-height: 190px !important; }
+          .evaluations-filter-bar .ward-filter-options .dropdown-item { font-size: 14px; padding: 8px 10px; }
         }
-
         @media (max-width: 380px) {
-          .evaluations-filter-bar {
-            grid-template-columns: minmax(0, 1fr);
-          }
+          .evaluations-filter-bar { grid-template-columns: minmax(0, 1fr); }
         }
       `}</style>
       <PageHeader
@@ -2830,6 +3082,7 @@ function Evaluations() {
     </>
   );
 }
+
 function Pagination({ page, pages, onChange }) {
   return (
     pages > 1 && (
@@ -3046,6 +3299,7 @@ function Reports() {
     </>
   );
 }
+
 function ReportDetail() {
   const { id } = useParams();
   const [report, setReport] = useState(null);

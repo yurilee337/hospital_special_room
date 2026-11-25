@@ -1452,3 +1452,125 @@ a {
     break-after: auto !important;
   }
 }
+/* สไตล์ปุ่มส่งแบบประเมินแบบมีแอนิเมชัน */
+.custom-submit-btn {
+  position: relative;
+  width: 100%;
+  height: 48px;
+  background-color: #0d6efd;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.custom-submit-btn:hover {
+  background-color: #0b5ed7;
+}
+
+/* สถานะกำลังโหลด: ปุ่มจะหดลงเป็นวงกลมมนๆ และหมุน */
+.custom-submit-btn.loading {
+  width: 48px;
+  min-width: 48px;
+  border-radius: 50%;
+  color: transparent;
+  pointer-events: none;
+}
+
+.custom-submit-btn.loading::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: button-loading-spinner 0.6s linear infinite;
+}
+
+/* สถานะสำเร็จ: เปลี่ยนเป็นสีเขียว */
+.custom-submit-btn.success {
+  background-color: #198754;
+  width: 100%;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+@keyframes button-loading-spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Animated action buttons: image selection and QR generation */
+.action-button-content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 22px;
+  transition: color .25s ease, transform .25s ease;
+}
+.action-button-content.loading,
+.action-button-content.success { font-weight: 600; }
+.action-button-content.success { color: #16865b; }
+.action-spinner {
+  display: inline-block;
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: action-spin .7s linear infinite;
+}
+.action-check {
+  display: inline-grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  flex: 0 0 21px;
+  border-radius: 50%;
+  color: #fff;
+  background: #19a66a;
+  font-size: 14px;
+  font-weight: 700;
+  animation: action-check-pop .32s cubic-bezier(.2,.9,.3,1.4) both;
+}
+.qr-create-button {
+  min-width: 174px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  transition: background-color .25s ease, border-color .25s ease,
+    box-shadow .25s ease, transform .25s ease;
+}
+.qr-create-button.loading { cursor: progress; }
+.qr-create-button.success {
+  background: #16865b;
+  border-color: #16865b;
+  box-shadow: 0 4px 14px #16865b35;
+}
+.qr-create-button:not(:disabled):active { transform: scale(.97); }
+@keyframes action-spin { to { transform: rotate(360deg); } }
+@keyframes action-check-pop {
+  from { opacity: 0; transform: scale(.35) rotate(-35deg); }
+  to { opacity: 1; transform: scale(1) rotate(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .action-spinner { animation-duration: 1.8s; }
+  .action-check { animation: none; }
+  .qr-create-button, .action-button-content { transition: none; }
+}
