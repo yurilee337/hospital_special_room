@@ -3138,16 +3138,68 @@ function Evaluations() {
           word-break: normal;
           box-sizing: border-box;
         }
-        @media (max-width: 768px) {
-          .evaluations-filter-bar .ward-filter-picker { grid-column: 1 / -1; }
-          .evaluations-filter-bar .ward-filter-picker > button { font-size: 13px; padding-left: 8px; padding-right: 34px; background-position: right 9px center; }
-          .evaluations-filter-bar > select,
-          .evaluations-filter-bar > input[type="date"] { font-size: 13px; line-height: 1.35; padding-left: 8px; padding-right: 30px; }
-          .evaluations-filter-bar .ward-filter-options { max-height: 190px !important; }
-          .evaluations-filter-bar .ward-filter-options .dropdown-item { font-size: 14px; padding: 8px 10px; }
+        /* Tablet: ใช้ 2 คอลัมน์เมื่อมีพื้นที่เพียงพอ */
+        @media (min-width: 601px) and (max-width: 1024px) {
+          .evaluations-filter-bar {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+          .evaluations-filter-bar .search-field,
+          .evaluations-filter-bar .ward-filter-picker {
+            grid-column: 1 / -1;
+          }
         }
-        @media (max-width: 380px) {
-          .evaluations-filter-bar { grid-template-columns: minmax(0, 1fr); }
+
+        /* Mobile: เรียงทุกตัวกรองลงมาเต็มความกว้าง ป้องกันข้อความและวันที่ถูกบีบ */
+        @media (max-width: 600px) {
+          .evaluations-filter-bar {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 10px;
+            padding: 12px;
+          }
+          .evaluations-filter-bar > *,
+          .evaluations-filter-bar .search-field,
+          .evaluations-filter-bar .ward-filter-picker {
+            grid-column: 1 / -1;
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+          }
+          .evaluations-filter-bar .search-field {
+            min-height: 46px;
+            height: auto;
+          }
+          .evaluations-filter-bar .search-field input {
+            min-width: 0;
+            font-size: 14px;
+          }
+          .evaluations-filter-bar .ward-filter-picker > button {
+            min-height: 46px;
+            font-size: 14px;
+            padding: 10px 36px 10px 12px;
+            background-position: right 10px center;
+          }
+          .evaluations-filter-bar > select,
+          .evaluations-filter-bar > input[type="date"] {
+            min-height: 46px;
+            height: auto;
+            width: 100%;
+            min-width: 0;
+            font-size: 14px;
+            line-height: 1.4;
+            padding: 10px 34px 10px 12px;
+            box-sizing: border-box;
+          }
+          .evaluations-filter-bar .ward-filter-options {
+            max-height: 190px !important;
+          }
+          .evaluations-filter-bar .ward-filter-options .dropdown-item {
+            font-size: 14px;
+            padding: 9px 10px;
+          }
+          .evaluations-filter-bar > .btn {
+            min-height: 46px;
+            width: 100%;
+          }
         }
       `}</style>
       <PageHeader
