@@ -25,10 +25,8 @@ import {
   Star,
   TriangleAlert,
   User,
-  Camera,
-  ImagePlus,
 } from "lucide-react";
-import { Bar, Line } from "react-chartjs-2";
+import { Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -169,7 +167,6 @@ function triggerFieldAttention(fieldKey, message, ref) {
   const [error, setError] = useState(
     qrToken ? "" : "กรุณาสแกน QR Code ประจำอาคารเพื่อเริ่มทำแบบประเมิน",
   );
-  const [submitting, setSubmitting] = useState(false); //State สถานะกำลังส่งข้อมูล
 
   //ดักจับกรณีไม่มีรหัส QR Code
   useEffect(() => {
@@ -201,7 +198,7 @@ function triggerFieldAttention(fieldKey, message, ref) {
   }, [qrToken]); //ให้รันโค้ดทั้งหมดนี้ใหม่เฉพาะตอนที่เปิดหน้าเว็บครั้งแรก หรือตอนที่ค่า qrToken ใน URL เปลี่ยนไปเท่านั้น
   const [buttonStatus, setButtonStatus] = useState("idle"); // 'idle' | 'loading' | 'success'
   async function submit(event) {
-  event.preventDefault();
+    event.preventDefault();
 
   if (form.has_problem) {
     const hasCategory = form.problem_category_ids.length > 0;
@@ -227,12 +224,8 @@ function triggerFieldAttention(fieldKey, message, ref) {
     }
   }
 
-  setError("");
-  setButtonStatus("loading");
-  // ... ส่วนที่เหลือเหมือนเดิม
-    event.preventDefault();
     setError("");
-    setButtonStatus("loading"); // 1. เริ่มอนิเมชันปุ่มหมุนๆ ตอนกำลังส่ง
+    setButtonStatus("loading"); // เริ่มสถานะกำลังส่ง
 
     const data = new FormData();
     data.append("qr_token", qrToken);
@@ -1140,7 +1133,7 @@ function AdminLayout({ children }) {
             className="logout-btn"
             onClick={logout}
           >
-            <LogOut size={18} />
+            <LogOut size={18} className="logout-btn-icon" aria-hidden="true" />
             <span>ออกจากระบบ</span>
           </button>
         </div>
@@ -1180,7 +1173,6 @@ function QrManagement() {
   const [showCreatedPreview, setShowCreatedPreview] = useState(false);
   const [printJob, setPrintJob] = useState(null);
   const [surveyPrintJob, setSurveyPrintJob] = useState(null);
-  const [viewQrByWard, setViewQrByWard] = useState({});
   const [selectedQrIdsByWard, setSelectedQrIdsByWard] = useState({});
   const [openQrPickerByWard, setOpenQrPickerByWard] = useState({});
   const [error, setError] = useState("");
@@ -1202,38 +1194,37 @@ function QrManagement() {
   const [openWardPicker, setOpenWardPicker] = useState(false);
   useEffect(() => {
     function handleOutsidePointerDown(event) {
-      const target = event.target;
-      if (
-        target instanceof Element &&
-        (target.closest(".qr-picker-container") ||
-          target.closest(".ward-picker-container"))
-      ) {
-        return;
-      }
+      // ตรวจจาก composedPath เพื่อรองรับการคลิก input, label และเนื้อหาภายใน dropdown
+      const path =
+        typeof event.composedPath === "function" ? event.composedPath() : [];
+      const clickedInsidePicker = path.some(
+        (node) =>
+          node instanceof Element &&
+          (node.matches(".qr-picker-container, .ward-picker-container") ||
+            node.closest(".qr-picker-container, .ward-picker-container")),
+      );
+
+      if (clickedInsidePicker) return;
+
       setOpenQrPickerByWard({});
       setOpenWardPicker(false);
     }
 
-    document.addEventListener("pointerdown", handleOutsidePointerDown);
-    return () => {
-      document.removeEventListener("pointerdown", handleOutsidePointerDown);
-    };
-  }, []);
-
-  useEffect(() => {
-    function handleOutsidePointerDown(event) {
-      const target = event.target;
-      if (target instanceof Element && target.closest(".qr-picker-container")) {
-        return;
+    function handlePickerKeyDown(event) {
+      if (event.key === "Escape") {
+        setOpenQrPickerByWard({});
+        setOpenWardPicker(false);
       }
-      setOpenQrPickerByWard({});
     }
 
     document.addEventListener("pointerdown", handleOutsidePointerDown);
+    document.addEventListener("keydown", handlePickerKeyDown);
     return () => {
       document.removeEventListener("pointerdown", handleOutsidePointerDown);
+      document.removeEventListener("keydown", handlePickerKeyDown);
     };
   }, []);
+
 
   async function load() {
     try {
@@ -1600,11 +1591,7 @@ function QrManagement() {
     const wardCodes = codes.filter((code) =>
       code.ward_ids.some((id) => String(id) === String(ward.ward_id)),
     );
-    const selectedCodeId = viewQrByWard[ward.ward_id];
-    const selectedCode =
-      wardCodes.find(
-        (code) => String(code.qr_code_id) === String(selectedCodeId),
-      ) || wardCodes[0];
+    const selectedCode = wardCodes[0];
     return { ward, codes: wardCodes, selectedCode };
   });
 
@@ -1731,18 +1718,6 @@ function QrManagement() {
           .ward-qr-print-actions .btn { flex: 1 1 auto; min-width: max-content; }
         }
       `}</style>
-      {Object.values(openQrPickerByWard).some(Boolean) && (
-        <div
-          aria-hidden="true"
-          onPointerDown={() => setOpenQrPickerByWard({})}
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 19,
-            background: "transparent",
-          }}
-        />
-      )}
       <PageHeader
         eyebrow="WARD & BED QR CODES"
         title="จัดการ QR Code อาคารและเตียง"
@@ -2156,7 +2131,13 @@ function QrManagement() {
 
                     return (
                       <>
-                        <div className="position-relative qr-picker-container">
+                        <div
+                          className="position-relative qr-picker-container"
+                          onPointerDown={(event) => event.stopPropagation()}
+                          style={{
+                            zIndex: openQrPickerByWard[ward.ward_id] ? 1056 : "auto",
+                          }}
+                        >
                           <button
                             type="button"
                             className="form-select text-start"
@@ -2185,10 +2166,12 @@ function QrManagement() {
                             wardCodes.length > 0 && (
                               <div
                                 className="dropdown-menu show w-100 p-3 shadow-sm"
+                                onPointerDown={(event) => event.stopPropagation()}
                                 style={{
                                   maxHeight: 280,
                                   overflowY: "auto",
-                                  zIndex: 20,
+                                  zIndex: 1057,
+                                  pointerEvents: "auto",
                                 }}
                               >
                                 <label

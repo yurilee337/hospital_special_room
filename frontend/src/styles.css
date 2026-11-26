@@ -1840,204 +1840,6 @@ a {
 }
 \n
 
-/* จำนวนแถวที่แสดงในหน้าผลการประเมิน */
-.evaluations-page-size {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  flex-wrap: wrap;
-  gap: 9px;
-  width: 100%;
-  min-width: 0;
-  margin: 0 0 14px;
-  padding: 0 0 12px;
-  border-bottom: 1px solid #edf1f7;
-  color: #52627a;
-  font-size: 14px;
-}
-
-.evaluations-page-size label,
-.evaluations-page-size span {
-  margin: 0;
-  white-space: nowrap;
-}
-
-.evaluations-page-size input {
-  width: 82px;
-  min-width: 0;
-  height: 38px;
-  padding: 6px 9px;
-  border: 1px solid #d8e1ed;
-  border-radius: 8px;
-  background: #fff;
-  color: #243247;
-  font: inherit;
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-  box-sizing: border-box;
-}
-
-.evaluations-page-size input:focus {
-  border-color: #3478e5;
-  outline: 3px solid #3478e51a;
-}
-
-.evaluations-page-size .btn {
-  min-height: 38px;
-  padding: 6px 15px;
-  border-radius: 8px;
-  font-size: 13px;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-
-.evaluations-page-size small {
-  margin-left: 3px;
-  color: #8996a8;
-  font-size: 12px;
-}
-
-@media (max-width: 768px) {
-  .evaluations-page-size {
-    gap: 8px;
-    margin-bottom: 10px;
-    padding-bottom: 10px;
-    font-size: 13px;
-  }
-
-  .evaluations-page-size input {
-    width: 76px;
-    height: 40px;
-    font-size: 14px;
-  }
-
-  .evaluations-page-size .btn {
-    min-height: 40px;
-    padding-inline: 14px;
-  }
-
-  .evaluations-page-size small {
-    flex-basis: 100%;
-    margin-left: 0;
-    font-size: 11px;
-  }
-}
-
-@media (max-width: 380px) {
-  .evaluations-page-size {
-    gap: 7px;
-  }
-
-  .evaluations-page-size input {
-    width: 68px;
-  }
-}
-
-
-/* ปรับแถบกำหนดจำนวนแถวให้อ่านง่ายและไม่เบียดกัน */
-.evaluations-page-size {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  flex-wrap: wrap;
-  column-gap: 9px;
-  row-gap: 7px;
-  padding: 12px 14px;
-  margin: 0 0 14px;
-  border: 1px solid #e8edf4;
-  border-radius: 11px;
-  background: #f9fbfe;
-}
-
-.evaluations-page-size label {
-  color: #52627a;
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.evaluations-page-size input {
-  width: 76px;
-  height: 38px;
-  padding: 6px 10px;
-  border: 1px solid #dce5f1;
-  border-radius: 8px;
-  background: #fff;
-  color: #26354b;
-  font-size: 14px;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-
-.evaluations-page-size input:focus {
-  border-color: #6d9ce8;
-  outline: 3px solid #3578e51a;
-}
-
-.evaluations-page-size > span {
-  color: #68778d;
-  font-size: 13px;
-}
-
-.evaluations-page-size .btn {
-  min-height: 38px;
-  padding: 6px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.2;
-}
-
-.evaluations-page-size small {
-  flex: 0 0 100%;
-  display: block;
-  margin: 0;
-  padding: 0;
-  color: #8996a8;
-  font-size: 11px;
-  line-height: 1.35;
-}
-
-@media (max-width: 768px) {
-  .evaluations-page-size {
-    column-gap: 8px;
-    row-gap: 6px;
-    padding: 11px 12px;
-    margin-bottom: 12px;
-  }
-
-  .evaluations-page-size label,
-  .evaluations-page-size > span {
-    font-size: 13px;
-  }
-
-  .evaluations-page-size input {
-    width: 72px;
-    height: 38px;
-  }
-
-  .evaluations-page-size .btn {
-    min-height: 38px;
-    padding-inline: 15px;
-  }
-
-  .evaluations-page-size small {
-    padding-left: 0;
-    font-size: 11px;
-  }
-}
-
-@media (max-width: 360px) {
-  .evaluations-page-size {
-    column-gap: 6px;
-    padding-inline: 10px;
-  }
-
-  .evaluations-page-size input {
-    width: 64px;
-  }
-}
-
-
 /* Dropdown เลือกจำนวนแถว: เรียบง่าย กระชับ ไม่ต้องกดปุ่มยืนยัน */
 .evaluations-page-size {
   display: flex;
@@ -2368,5 +2170,110 @@ a {
     transition: none !important;
     transform: none !important;
     box-shadow: none !important;
+  }
+}
+
+/* PC: keep the admin name readable; logout grows from left to right. */
+@media screen and (min-width: 1025px) and (hover: hover) and (pointer: fine) {
+  .sidebar-bottom {
+    position: relative;
+    padding-right: 3px;
+    gap: 8px;
+  }
+
+  .sidebar-bottom .admin-name {
+    flex: 0 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: visible;
+  }
+
+  .sidebar-bottom .admin-name small {
+    white-space: nowrap;
+  }
+
+  .sidebar-bottom .logout-btn {
+    position: relative;
+    flex: 0 0 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0;
+    width: 28px;
+    height: 36px;
+    min-width: 28px;
+    min-height: 36px;
+    margin-left: 2px;
+    padding: 0 5px;
+    overflow: hidden;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    background: transparent;
+    color: #8995a8;
+    cursor: pointer;
+    box-shadow: none;
+    white-space: nowrap;
+    transition:
+      flex-basis 320ms cubic-bezier(0.2, 0.75, 0.25, 1),
+      width 320ms cubic-bezier(0.2, 0.75, 0.25, 1),
+      color 180ms ease,
+      background-color 180ms ease,
+      border-color 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .sidebar-bottom .logout-btn .logout-btn-icon {
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  .sidebar-bottom .logout-btn span {
+    display: inline-block;
+    flex: 0 0 auto;
+    max-width: 0;
+    margin-left: 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateX(7px);
+    white-space: nowrap;
+    transition:
+      max-width 320ms cubic-bezier(0.2, 0.75, 0.25, 1),
+      margin-left 320ms cubic-bezier(0.2, 0.75, 0.25, 1),
+      opacity 180ms ease,
+      transform 320ms cubic-bezier(0.2, 0.75, 0.25, 1);
+  }
+
+  .sidebar-bottom .logout-btn:hover {
+    flex-basis: 112px;
+    width: 112px;
+    min-width: 112px;
+    color: #c43d3d;
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  .sidebar-bottom .logout-btn:hover span,
+  .sidebar-bottom .logout-btn:focus-visible span {
+    max-width: 78px;
+    margin-left: 8px;
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .sidebar-bottom .logout-btn:focus-visible {
+    outline: 2px solid #9bbcf0;
+    outline-offset: 2px;
+    color: #c43d3d;
+    background: transparent;
+    border-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) and (min-width: 1025px) {
+  .sidebar-bottom .logout-btn,
+  .sidebar-bottom .logout-btn span {
+    transition: none !important;
   }
 }
