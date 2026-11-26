@@ -139,7 +139,7 @@ async function createEvaluation(req, res, next) {
       Number(item.score) < 1 || Number(item.score) > 5
     ) || new Set(scores.map(item => item.topic_code)).size !== topics.size) throw invalid('กรุณาให้คะแนนครบทุกหัวข้อ (1-5)');
     if (suggestion.length > 5000 || description.length > 5000) throw invalid('ข้อความยาวเกินกำหนด');
-    if (uploadedFiles.length && !description) throw invalid('กรุณาระบุรายละเอียดปัญหาเมื่อแนบรูปภาพ');
+    
 
     connection = await pool.getConnection();
     await connection.beginTransaction();
