@@ -1,10 +1,45 @@
 import { useEffect, useRef, useState } from "react";
 
-import {Link,NavLink,Navigate,Route,Routes,useLocation,useNavigate,useParams,} from "react-router-dom";
-import {BarChart3,Check,ClipboardList,Download,Eye,EyeOff,FileDown,Lock,LogOut,QrCode,Search,Star,
-  TriangleAlert,User,Camera,ImagePlus,} from "lucide-react";
+import {
+  Link,
+  NavLink,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+import {
+  BarChart3,
+  Check,
+  ClipboardList,
+  Download,
+  Eye,
+  EyeOff,
+  FileDown,
+  Lock,
+  LogOut,
+  QrCode,
+  Search,
+  Star,
+  TriangleAlert,
+  User,
+  Camera,
+  ImagePlus,
+} from "lucide-react";
 import { Bar, Line } from "react-chartjs-2";
-import {Chart as ChartJS,CategoryScale,LinearScale,PointElement,LineElement,BarElement,Tooltip,Legend,Filler,} from "chart.js";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Tooltip,
+  Legend,
+  Filler,
+} from "chart.js";
 import Swal from "sweetalert2";
 import { QRCodeSVG } from "qrcode.react";
 import api, { getErrorMessage } from "./services/api";
@@ -67,9 +102,7 @@ function EvaluationForm() {
   const [survey, setSurvey] = useState(null);
   const [loading, setLoading] = useState(Boolean(qrToken));
   const [categories, setCategories] = useState([]);
-
   const [images, setImages] = useState([]);
-
   const handleAddImages = (event) => {
     const newFiles = Array.from(event.target.files || []);
     if (!newFiles.length) return;
@@ -95,7 +128,34 @@ function EvaluationForm() {
         ? previous.problem_category_ids.filter((item) => item !== id)
         : [...previous.problem_category_ids, id],
     }));
+const categorySectionRef = useRef(null);
+const evidenceSectionRef = useRef(null);
 
+const [fieldErrors, setFieldErrors] = useState({
+  categories: "",
+  evidence: "",
+});
+const [shakeField, setShakeField] = useState({
+  categories: false,
+  evidence: false,
+});
+
+function triggerFieldAttention(fieldKey, message, ref) {
+  setFieldErrors((prev) => ({ ...prev, [fieldKey]: message }));
+  setShakeField((prev) => ({ ...prev, [fieldKey]: false }));
+
+  requestAnimationFrame(() => {
+    setShakeField((prev) => ({ ...prev, [fieldKey]: true }));
+    ref.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+    });
+  });
+
+  setTimeout(() => {
+    setShakeField((prev) => ({ ...prev, [fieldKey]: false }));
+  }, 450);
+}
   const [form, setForm] = useState({
     bed_id: "",
     respondent_type: "patient",
@@ -141,6 +201,35 @@ function EvaluationForm() {
   }, [qrToken]); //ให้รันโค้ดทั้งหมดนี้ใหม่เฉพาะตอนที่เปิดหน้าเว็บครั้งแรก หรือตอนที่ค่า qrToken ใน URL เปลี่ยนไปเท่านั้น
   const [buttonStatus, setButtonStatus] = useState("idle"); // 'idle' | 'loading' | 'success'
   async function submit(event) {
+  event.preventDefault();
+
+  if (form.has_problem) {
+    const hasCategory = form.problem_category_ids.length > 0;
+    const hasDescription = form.problem_description.trim().length > 0;
+    const hasImage = images.length > 0;
+
+    if (!hasCategory) {
+      triggerFieldAttention(
+        "categories",
+        "กรุณาเลือกประเภทปัญหาอย่างน้อย 1 ข้อ",
+        categorySectionRef,
+      );
+      return;
+    }
+
+    if (!hasDescription && !hasImage) {
+      triggerFieldAttention(
+        "evidence",
+        "กรุณากรอกรายละเอียดเพิ่มเติม หรือแนบรูปภาพอย่างน้อย 1 อย่าง",
+        evidenceSectionRef,
+      );
+      return;
+    }
+  }
+
+  setError("");
+  setButtonStatus("loading");
+  // ... ส่วนที่เหลือเหมือนเดิม
     event.preventDefault();
     setError("");
     setButtonStatus("loading"); // 1. เริ่มอนิเมชันปุ่มหมุนๆ ตอนกำลังส่ง
@@ -197,6 +286,30 @@ function EvaluationForm() {
   }
   return (
     <main className="survey-page">
+      <style>{`
+  @keyframes gformShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-6px); }
+    80% { transform: translateX(6px); }
+  }
+  .gform-shake {
+    animation: gformShake 0.42s ease-in-out;
+  }
+  .gform-error-box {
+    border: 1.5px solid #dc3545 !important;
+    background-color: #fff8f8;
+    border-radius: 10px;
+    padding: 12px;
+  }
+  .gform-error-text {
+    color: #dc3545;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-top: 6px;
+  }
+`}</style>
       <div className="survey-topbar">
         <img
           className="hospital-logo"
@@ -404,131 +517,174 @@ function EvaluationForm() {
                 </label>
               ))}
             </div>
-            {form.has_problem && (
-              <>
-                <label className="form-label">
-                  ประเภทปัญหา (เลือกได้มากกว่า 1 ข้อ)
-                </label>
-                <div className="category-list">
-                  {categories.map((item) => (
-                    <label
-                      className="form-check category-chip"
-                      key={item.category_id}
-                    >
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={form.problem_category_ids.includes(
-                          item.category_id,
-                        )}
-                        onChange={() => toggleCategory(item.category_id)}
-                      />
-                      <span className="form-check-label">
-                        {item.category_name}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-                <label className="form-label mt-3">รายละเอียดเพิ่มเติม</label>
-                <textarea
-                  className="form-control mb-3"
-                  rows="3"
-                  maxLength="5000"
-                  value={form.problem_description}
-                  onChange={(event) =>
-                    setForm({
-                      ...form,
-                      problem_description: event.target.value,
-                    })
-                  }
-                  placeholder="ระบุรายละเอียดปัญหา (ถ้ามี)"
+           {form.has_problem && (
+  <>
+    <div
+      ref={categorySectionRef}
+      className={`${shakeField.categories ? "gform-shake" : ""} ${
+        fieldErrors.categories ? "gform-error-box" : ""
+      }`}
+    >
+      <label className="form-label">
+        ประเภทปัญหา <span className="text-danger">*</span>{" "}
+        <small className="text-muted">(เลือกได้มากกว่า 1 ข้อ)</small>
+      </label>
+      <div className="category-list">
+        {categories.map((item) => (
+          <label
+            className="form-check category-chip"
+            key={item.category_id}
+          >
+            <input
+              className="form-check-input"
+              type="checkbox"
+              checked={form.problem_category_ids.includes(
+                item.category_id,
+              )}
+              onChange={() => {
+                toggleCategory(item.category_id);
+                setFieldErrors((prev) => ({ ...prev, categories: "" }));
+              }}
+            />
+            <span className="form-check-label">
+              {item.category_name}
+            </span>
+          </label>
+        ))}
+      </div>
+      {fieldErrors.categories && (
+        <div className="gform-error-text" role="alert">
+          ! {fieldErrors.categories}
+        </div>
+      )}
+    </div>
+
+    <div
+      ref={evidenceSectionRef}
+      className={`mt-3 ${shakeField.evidence ? "gform-shake" : ""} ${
+        fieldErrors.evidence ? "gform-error-box" : ""
+      }`}
+    >
+      <label className="form-label">
+        รายละเอียดเพิ่มเติม{" "}
+        <small className="text-muted">
+          (กรอกรายละเอียด หรือแนบรูปภาพอย่างใดอย่างหนึ่ง)
+        </small>
+      </label>
+      <textarea
+        className="form-control mb-3"
+        rows="3"
+        maxLength="5000"
+        value={form.problem_description}
+        onChange={(event) => {
+          const nextValue = event.target.value;
+          setForm({ ...form, problem_description: nextValue });
+          if (nextValue.trim() || images.length > 0) {
+            setFieldErrors((prev) => ({ ...prev, evidence: "" }));
+          }
+        }}
+        placeholder="ระบุรายละเอียดปัญหาเพิ่มเติม..."
+      />
+
+      <label className="form-label">
+        แนบรูปภาพ (JPG, PNG, WEBP ไม่เกิน 3 รูป รูปละ 5 MB)
+      </label>
+      <div className="d-flex gap-2 mb-2">
+        <label
+          className={`btn btn-outline-primary flex-fill d-flex align-items-center justify-content-center gap-2 ${
+            images.length >= 3 ? "disabled" : ""
+          }`}
+          style={{
+            cursor: images.length >= 3 ? "not-allowed" : "pointer",
+          }}
+        >
+          <span>📷 ถ่ายรูป</span>
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            hidden
+            disabled={images.length >= 3}
+            onChange={(event) => {
+              handleAddImages(event);
+              setFieldErrors((prev) => ({ ...prev, evidence: "" }));
+            }}
+          />
+        </label>
+
+        <label
+          className={`btn btn-outline-secondary flex-fill d-flex align-items-center justify-content-center gap-2 ${
+            images.length >= 3 ? "disabled" : ""
+          }`}
+          style={{
+            cursor: images.length >= 3 ? "not-allowed" : "pointer",
+          }}
+        >
+          <span>🖼️ เลือกจากคลังภาพ</span>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            hidden
+            disabled={images.length >= 3}
+            onChange={(event) => {
+              handleAddImages(event);
+              setFieldErrors((prev) => ({ ...prev, evidence: "" }));
+            }}
+          />
+        </label>
+      </div>
+
+      {images.length > 0 && (
+        <div className="mt-2">
+          <small className="text-muted d-block mb-2">
+            เลือกแล้ว {images.length} / 3 รูป
+          </small>
+          <div className="d-flex gap-2 flex-wrap">
+            {images.map((file, idx) => (
+              <div
+                key={`${file.name}-${idx}`}
+                className="position-relative border rounded overflow-hidden"
+                style={{ width: 80, height: 80 }}
+              >
+                <img
+                  src={URL.createObjectURL(file)}
+                  alt={`preview-${idx}`}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
                 />
+                <button
+                  type="button"
+                  className="btn btn-danger btn-sm position-absolute top-0 end-0 p-0 d-flex align-items-center justify-content-center"
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: "0 0 0 6px",
+                  }}
+                  onClick={() => removeImage(idx)}
+                  title="ลบรูปนี้"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-                {/* ส่วนปุ่มถ่ายรูปและเลือกรูปภาพ */}
-                <label className="form-label">
-                  แนบรูปภาพ (JPG, PNG, WEBP ไม่เกิน 3 รูป รูปละ 5 MB)
-                </label>
-                <div className="d-flex gap-2 mb-2">
-                  <label
-                    className={`btn btn-outline-primary flex-fill d-flex align-items-center justify-content-center gap-2 ${
-                      images.length >= 3 ? "disabled" : ""
-                    }`}
-                    style={{
-                      cursor: images.length >= 3 ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    <span>📷 ถ่ายรูป</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      hidden
-                      disabled={images.length >= 3}
-                      onChange={handleAddImages}
-                    />
-                  </label>
-
-                  <label
-                    className={`btn btn-outline-secondary flex-fill d-flex align-items-center justify-content-center gap-2 ${
-                      images.length >= 3 ? "disabled" : ""
-                    }`}
-                    style={{
-                      cursor: images.length >= 3 ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    <span>🖼️ เลือกจากคลังภาพ</span>
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      multiple
-                      hidden
-                      disabled={images.length >= 3}
-                      onChange={handleAddImages}
-                    />
-                  </label>
-                </div>
-
-                {images.length > 0 && (
-                  <div className="mt-2">
-                    <small className="text-muted d-block mb-2">
-                      เลือกแล้ว {images.length} / 3 รูป
-                    </small>
-                    <div className="d-flex gap-2 flex-wrap">
-                      {images.map((file, idx) => (
-                        <div
-                          key={`${file.name}-${idx}`}
-                          className="position-relative border rounded overflow-hidden"
-                          style={{ width: 80, height: 80 }}
-                        >
-                          <img
-                            src={URL.createObjectURL(file)}
-                            alt={`preview-${idx}`}
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                            }}
-                          />
-                          <button
-                            type="button"
-                            className="btn btn-danger btn-sm position-absolute top-0 end-0 p-0 d-flex align-items-center justify-content-center"
-                            style={{
-                              width: 22,
-                              height: 22,
-                              borderRadius: "0 0 0 6px",
-                            }}
-                            onClick={() => removeImage(idx)}
-                            title="ลบรูปนี้"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
+      {fieldErrors.evidence && (
+        <div className="gform-error-text" role="alert">
+          ! {fieldErrors.evidence}
+        </div>
+      )}
+    </div>
+  </>
+)}
+                     
+              
           </section>
           <button
             type="submit"
@@ -1837,17 +1993,37 @@ function QrManagement() {
                   ref={index === 0 ? qrPreviewRef : undefined}
                   key={code.qr_code_id}
                   className="content-card qr-preview-card my-3 d-flex align-items-center gap-4 flex-wrap"
+                  style={{ maxWidth: "100%", overflow: "hidden" }}
                 >
-                  <QRCodeSVG value={surveyUrl} size={160} />
-                  <div>
-                    <h2>QR Code สำหรับ {code.building_name}</h2>
-                    <p className="mb-2">
+                  <QRCodeSVG
+                    value={surveyUrl}
+                    size={isMobile ? 136 : 160}
+                    style={{ flexShrink: 0, maxWidth: "100%", height: "auto" }}
+                  />
+                  <div
+                    style={{ flex: "1 1 220px", minWidth: 0, maxWidth: "100%" }}
+                  >
+                    <h2 style={{ overflowWrap: "anywhere" }}>
+                      QR Code สำหรับ {code.building_name}
+                    </h2>
+                    <p className="mb-2" style={{ overflowWrap: "anywhere" }}>
                       {code.bed_name || "ไม่ผูกเตียง · ผู้ประเมินเลือกเตียงเอง"}
                     </p>
                     <p className="mb-2">
                       สแกน QR Code หรือเปิดลิงก์ด้านล่างเพื่อตรวจสอบได้
                     </p>
-                    <a href={surveyUrl} target="_blank" rel="noreferrer">
+                    <a
+                      href={surveyUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: "block",
+                        maxWidth: "100%",
+                        overflowWrap: "anywhere",
+                        wordBreak: "break-all",
+                        fontSize: isMobile ? "0.875rem" : "1rem",
+                      }}
+                    >
                       {surveyUrl}
                     </a>
                     <div className="mt-3 d-flex gap-2 flex-wrap">
@@ -2822,7 +2998,9 @@ function Evaluations() {
         const rows = [...firstRows];
         const batchSize = Math.max(
           1,
-          Number(firstResponse.data?.pagination?.limit) || firstRows.length || 500,
+          Number(firstResponse.data?.pagination?.limit) ||
+            firstRows.length ||
+            500,
         );
         const totalPages = Math.ceil(total / batchSize);
 
@@ -3000,7 +3178,11 @@ function Evaluations() {
         </button>
       </PageHeader>
       <Alert error={error} />
-      {notice && <div className="alert alert-warning" role="status">{notice}</div>}
+      {notice && (
+        <div className="alert alert-warning" role="status">
+          {notice}
+        </div>
+      )}
       <form className="filter-bar evaluations-filter-bar" onSubmit={search}>
         <div className="search-field">
           <Search size={17} />
@@ -3124,9 +3306,7 @@ function Evaluations() {
           {pageSize === "ALL" && (
             <small>โหลดข้อมูลเป็นชุดเพื่อช่วยลดภาระการเชื่อมต่อ</small>
           )}
-          {loadingRows && (
-            <small role="status">กำลังโหลดข้อมูล...</small>
-          )}
+          {loadingRows && <small role="status">กำลังโหลดข้อมูล...</small>}
         </div>
         <div className="table-responsive">
           <table className="table data-table align-middle">
@@ -3187,7 +3367,9 @@ function Evaluations() {
                 <tr>
                   <td colSpan="6">
                     <div className="empty-state">
-                      {loadingRows ? "กำลังโหลดข้อมูล..." : "ไม่พบข้อมูลการประเมิน"}
+                      {loadingRows
+                        ? "กำลังโหลดข้อมูล..."
+                        : "ไม่พบข้อมูลการประเมิน"}
                     </div>
                   </td>
                 </tr>
@@ -3242,10 +3424,7 @@ function Pagination({ page, pages, onChange }) {
       </div>
 
       {/* Flexing arrows สำหรับมือถือและ iPad */}
-      <nav
-        className="flexing-pagination"
-        aria-label="เปลี่ยนหน้าผลการประเมิน"
-      >
+      <nav className="flexing-pagination" aria-label="เปลี่ยนหน้าผลการประเมิน">
         <button
           type="button"
           className="flexing-pagination-arrow is-previous"
@@ -3253,7 +3432,9 @@ function Pagination({ page, pages, onChange }) {
           disabled={page <= 1}
           onClick={() => onChange(page - 1)}
         >
-          <span className="flexing-arrow-icon" aria-hidden="true">‹</span>
+          <span className="flexing-arrow-icon" aria-hidden="true">
+            ‹
+          </span>
           <span className="flexing-arrow-label">ก่อนหน้า</span>
         </button>
 
@@ -3271,7 +3452,9 @@ function Pagination({ page, pages, onChange }) {
           onClick={() => onChange(page + 1)}
         >
           <span className="flexing-arrow-label">ถัดไป</span>
-          <span className="flexing-arrow-icon" aria-hidden="true">›</span>
+          <span className="flexing-arrow-icon" aria-hidden="true">
+            ›
+          </span>
         </button>
       </nav>
     </>

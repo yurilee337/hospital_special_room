@@ -2137,3 +2137,236 @@ a {
     text-align: right;
   }
 }
+
+/* =========================================================
+   Modern Healthcare Refresh
+   Mobile-first interactions; intentionally excludes print/A4.
+   ========================================================= */
+
+:root {
+  --health-blue: #3578e5;
+  --health-blue-dark: #2868c7;
+  --health-blue-soft: #edf4ff;
+  --health-ink: #24344b;
+  --health-muted: #7f8da2;
+  --health-border: #e5ecf5;
+  --health-ease: cubic-bezier(.2, .75, .25, 1);
+}
+
+@media screen {
+  /* Softer page surfaces without changing the established layout. */
+  .survey-page {
+    background:
+      radial-gradient(ellipse at 50% 0, rgba(220, 235, 255, .72) 0, transparent 58%),
+      #f6f9fd;
+  }
+
+  .survey-topbar {
+    background: rgba(255, 255, 255, .92);
+    backdrop-filter: saturate(140%) blur(10px);
+    -webkit-backdrop-filter: saturate(140%) blur(10px);
+  }
+
+  .survey-card,
+  .login-card,
+  .content-card {
+    border-color: var(--health-border);
+    box-shadow: 0 5px 22px rgba(35, 64, 105, .045);
+  }
+
+  /* One-time entrance motion: restrained, short and non-distracting. */
+  @keyframes healthcareEnter {
+    from { opacity: 0; transform: translate3d(0, 12px, 0); }
+    to { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+
+  .survey-heading,
+  .survey-card,
+  .login-card,
+  .admin-content > .page-header,
+  .admin-content > .stats-grid,
+  .admin-content > .dashboard-grid,
+  .admin-content > .content-card,
+  .admin-content > .filter-bar,
+  .admin-content > .table-wrap {
+    animation: healthcareEnter .48s var(--health-ease) both;
+  }
+
+  .survey-card { animation-delay: 70ms; }
+  .admin-content > .stats-grid { animation-delay: 60ms; }
+  .admin-content > .dashboard-grid,
+  .admin-content > .content-card { animation-delay: 110ms; }
+
+  /* Shared motion defaults. Hover is only enabled on real hover devices. */
+  button,
+  .btn,
+  .nav-item,
+  .admin-entry,
+  .category-chip,
+  .rating-options label,
+  .form-control,
+  .form-select,
+  .search-field,
+  .content-card,
+  .stat-card {
+    transition:
+      color .18s ease,
+      background-color .18s ease,
+      border-color .18s ease,
+      box-shadow .22s var(--health-ease),
+      transform .18s var(--health-ease);
+  }
+
+  button,
+  .btn,
+  .nav-item,
+  .admin-entry,
+  .category-chip,
+  .rating-options label {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  button:active:not(:disabled),
+  .btn:active:not(:disabled),
+  .nav-item:active,
+  .admin-entry:active,
+  .category-chip:active,
+  .rating-options label:active {
+    transform: scale(.975);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .content-card:hover,
+    .stat-card:hover {
+      transform: translateY(-2px);
+      border-color: #d8e5f7;
+      box-shadow: 0 10px 26px rgba(35, 64, 105, .085);
+    }
+
+    .btn-primary:hover {
+      background: var(--health-blue-dark);
+      border-color: var(--health-blue-dark);
+      box-shadow: 0 5px 14px rgba(53, 120, 229, .2);
+    }
+
+    .nav-item:hover {
+      background: #f1f6fd;
+      color: var(--health-blue-dark);
+    }
+  }
+
+  /* Clear keyboard focus without relying on hover. */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  .rating-options label:focus-within {
+    outline: 3px solid rgba(53, 120, 229, .22);
+    outline-offset: 2px;
+  }
+
+  .form-control:focus,
+  .form-select:focus,
+  .search-field:focus-within {
+    border-color: #83adeb;
+    box-shadow: 0 0 0 3px rgba(53, 120, 229, .11);
+  }
+
+  .rating-options label.active,
+  .category-chip:has(input:checked) {
+    box-shadow: 0 3px 10px rgba(53, 120, 229, .12);
+  }
+
+  .status {
+    transition: box-shadow .18s ease, background-color .18s ease;
+  }
+}
+
+/* Mobile-first: comfortable touch targets and less visual movement. */
+@media screen and (max-width: 700px) {
+  .survey-wrap {
+    margin-top: 28px;
+    margin-bottom: 42px;
+  }
+
+  .survey-topbar {
+    min-height: 60px;
+    height: auto;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .survey-card,
+  .login-card,
+  .content-card {
+    border-radius: 14px;
+  }
+
+  button,
+  .btn,
+  .admin-entry,
+  .category-chip,
+  .rating-options label,
+  .nav-item {
+    min-height: 42px;
+  }
+
+  .rating-options label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .stat-card {
+    box-shadow: 0 3px 14px rgba(35, 64, 105, .045);
+  }
+
+  /* No hover-only visual states on touch devices. */
+  .content-card:hover,
+  .stat-card:hover,
+  .nav-item:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .survey-heading,
+  .survey-card,
+  .login-card,
+  .admin-content > *,
+  button,
+  .btn,
+  .nav-item,
+  .admin-entry,
+  .category-chip,
+  .rating-options label,
+  .form-control,
+  .form-select,
+  .search-field,
+  .content-card,
+  .stat-card {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Keep all print output and A4 previews completely free of UI motion. */
+@media print {
+  .survey-heading,
+  .survey-card,
+  .login-card,
+  .admin-content > *,
+  button,
+  .btn,
+  .content-card,
+  .stat-card {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+}
