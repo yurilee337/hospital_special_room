@@ -174,7 +174,7 @@ function EvaluationForm() {
       // 2. เมื่อส่งสำเร็จ เปลี่ยนปุ่มเป็นสถานะติ๊กถูกสีเขียว
       setButtonStatus("success");
 
-      // 3. หน่วงเวลาไว้สัก 800 มิลลิวินาที (0.8 วิ) ให้คนใช้ได้เห็นแอนิเมชันปุ่มเขียวแป๊บนึง ก่อนจะเด้ง SweetAlert
+      // 3. หน่วงเวลาเล็กน้อยเพื่อให้ผู้ใช้เห็นปุ่มติ๊กถูกสีเขียวก่อนขึ้น SweetAlert
       setTimeout(async () => {
         const result = await Swal.fire({
           title: "ขอบคุณสำหรับความคิดเห็น",
@@ -188,7 +188,7 @@ function EvaluationForm() {
         if (result.isConfirmed) {
           window.location.href = window.location.pathname;
         }
-      }, 800);
+      }, 200);
     } catch (requestError) {
       setError(getErrorMessage(requestError));
       setButtonStatus("idle"); // ถ้าส่งไม่ผ่าน ให้คืนค่าปุ่มกลับเป็นปกติ
@@ -977,8 +977,15 @@ function AdminLayout({ children }) {
             {admin.username}
             <small>ผู้ดูแลระบบ</small>
           </div>
-          <button title="ออกจากระบบ" className="logout-btn" onClick={logout}>
+          <button
+            type="button"
+            title="ออกจากระบบ"
+            aria-label="ออกจากระบบ"
+            className="logout-btn"
+            onClick={logout}
+          >
             <LogOut size={18} />
+            <span>ออกจากระบบ</span>
           </button>
         </div>
       </aside>
@@ -2765,26 +2772,121 @@ function Evaluations() {
     has_problem: "",
   });
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState("20");
+  const [loadingRows, setLoadingRows] = useState(false);
+  const loadSequence = useRef(0);
   const [openFilterWardPicker, setOpenFilterWardPicker] = useState(false);
-  const load = (requestedPage = page) =>
-    api
-      .get("/admin/evaluations", {
-        params: { ...filters, page: requestedPage },
-      })
-      .then((response) => setData(response.data))
-      .catch((err) => setError(getErrorMessage(err)));
+
+  const load = async (requestedPage = page) => {
+    const sequence = ++loadSequence.current;
+    setLoadingRows(true);
+    setError("");
+
+    try {
+      if (pageSize === "ALL") {
+        // ป้องกันการดึงข้อมูลจำนวนมหาศาลเข้าหน้าเว็บและสร้าง DOM มากเกินไป
+        const countResponse = await api.get("/admin/evaluations", {
+          params: { ...filters, page: 1, limit: 1 },
+        });
+        const total = Number(countResponse.data?.pagination?.total || 0);
+        const ALL_ROWS_SAFE_LIMIT = 5000;
+
+        if (total > ALL_ROWS_SAFE_LIMIT) {
+          if (sequence === loadSequence.current) {
+            setNotice(
+              `พบข้อมูล ${total.toLocaleString("th-TH")} รายการ เพื่อป้องกันหน้าเว็บทำงานหนัก ระบบเปลี่ยนเป็นแสดง 100 แถวต่อหน้าให้อัตโนมัติ คุณยังเปิดดูข้อมูลทั้งหมดได้ด้วยการเปลี่ยนหน้า หรือใช้ตัวกรองให้แคบลง`,
+            );
+            setPageSize("100");
+            setPage(1);
+          }
+          return;
+        }
+
+        if (total === 0) {
+          if (sequence === loadSequence.current) {
+            setData({
+              data: [],
+              pagination: { total: 0, limit: 1, page: 1 },
+            });
+          }
+          return;
+        }
+
+        // ดึงทีละชุด ไม่ส่งคำขอเดียวที่มี limit หลายพัน/หลายหมื่นแถว
+        const firstResponse = await api.get("/admin/evaluations", {
+          params: { ...filters, page: 1, limit: Math.min(500, total) },
+        });
+        const firstRows = firstResponse.data?.data || [];
+        const rows = [...firstRows];
+        const batchSize = Math.max(
+          1,
+          Number(firstResponse.data?.pagination?.limit) || firstRows.length || 500,
+        );
+        const totalPages = Math.ceil(total / batchSize);
+
+        for (let batchPage = 2; batchPage <= totalPages; batchPage += 1) {
+          if (sequence !== loadSequence.current) return;
+          const batchResponse = await api.get("/admin/evaluations", {
+            params: { ...filters, page: batchPage, limit: batchSize },
+          });
+          const batchRows = batchResponse.data?.data || [];
+          rows.push(...batchRows);
+          if (!batchRows.length) break;
+        }
+
+        if (sequence === loadSequence.current) {
+          setData({
+            data: rows,
+            pagination: {
+              ...(firstResponse.data?.pagination || {}),
+              total,
+              limit: Math.max(total, 1),
+              page: 1,
+            },
+          });
+        }
+        return;
+      }
+
+      const response = await api.get("/admin/evaluations", {
+        params: { ...filters, page: requestedPage, limit: Number(pageSize) },
+      });
+      if (sequence === loadSequence.current) setData(response.data);
+    } catch (err) {
+      if (sequence === loadSequence.current) {
+        setError(getErrorMessage(err));
+      }
+    } finally {
+      if (sequence === loadSequence.current) setLoadingRows(false);
+    }
+  };
+
   useEffect(() => {
     api.get("/admin/wards").then((response) => setWards(response.data));
   }, []);
+
   useEffect(() => {
     load();
-  }, [page]);
+    return () => {
+      loadSequence.current += 1;
+    };
+  }, [page, pageSize]);
+
+  function changePageSize(value) {
+    setNotice("");
+    setPage(1);
+    setPageSize(value);
+  }
+
   function search(event) {
     event.preventDefault();
+    setNotice("");
     setPage(1);
     load(1);
   }
+
   async function exportCsv() {
     try {
       const response = await api.get("/admin/export/csv", {
@@ -2898,6 +3000,7 @@ function Evaluations() {
         </button>
       </PageHeader>
       <Alert error={error} />
+      {notice && <div className="alert alert-warning" role="status">{notice}</div>}
       <form className="filter-bar evaluations-filter-bar" onSubmit={search}>
         <div className="search-field">
           <Search size={17} />
@@ -3003,6 +3106,28 @@ function Evaluations() {
         <button className="btn btn-primary">ค้นหา</button>
       </form>
       <section className="content-card">
+        <div className="evaluations-page-size">
+          <label htmlFor="evaluations-page-size-select">แสดง</label>
+          <select
+            id="evaluations-page-size-select"
+            value={pageSize}
+            onChange={(event) => changePageSize(event.target.value)}
+            aria-label="จำนวนแถวที่แสดง"
+          >
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="ALL">ALL</option>
+          </select>
+          <span>แถว</span>
+          {pageSize === "ALL" && (
+            <small>โหลดข้อมูลเป็นชุดเพื่อช่วยลดภาระการเชื่อมต่อ</small>
+          )}
+          {loadingRows && (
+            <small role="status">กำลังโหลดข้อมูล...</small>
+          )}
+        </div>
         <div className="table-responsive">
           <table className="table data-table align-middle">
             <thead>
@@ -3061,7 +3186,9 @@ function Evaluations() {
               {!data.data.length && (
                 <tr>
                   <td colSpan="6">
-                    <div className="empty-state">ไม่พบข้อมูลการประเมิน</div>
+                    <div className="empty-state">
+                      {loadingRows ? "กำลังโหลดข้อมูล..." : "ไม่พบข้อมูลการประเมิน"}
+                    </div>
                   </td>
                 </tr>
               )}
@@ -3073,7 +3200,11 @@ function Evaluations() {
           pages={Math.max(
             1,
             Math.ceil(
-              (data.pagination.total || 0) / (data.pagination.limit || 20),
+              (data.pagination.total || 0) /
+                (data.pagination.limit ||
+                  (pageSize === "ALL"
+                    ? Math.max(data.pagination.total || 1, 1)
+                    : Number(pageSize))),
             ),
           )}
           onChange={setPage}
@@ -3082,24 +3213,68 @@ function Evaluations() {
     </>
   );
 }
-
 function Pagination({ page, pages, onChange }) {
+  if (pages <= 1) return null;
+
   return (
-    pages > 1 && (
-      <div className="pagination-row">
+    <>
+      {/* รูปแบบเดิมสำหรับ PC */}
+      <div className="pagination-row evaluations-pagination-desktop">
         <span>
           หน้า {page} จาก {pages}
         </span>
         <div>
-          <button disabled={page <= 1} onClick={() => onChange(page - 1)}>
+          <button
+            type="button"
+            disabled={page <= 1}
+            onClick={() => onChange(page - 1)}
+          >
             ก่อนหน้า
           </button>
-          <button disabled={page >= pages} onClick={() => onChange(page + 1)}>
+          <button
+            type="button"
+            disabled={page >= pages}
+            onClick={() => onChange(page + 1)}
+          >
             ถัดไป
           </button>
         </div>
       </div>
-    )
+
+      {/* Flexing arrows สำหรับมือถือและ iPad */}
+      <nav
+        className="flexing-pagination"
+        aria-label="เปลี่ยนหน้าผลการประเมิน"
+      >
+        <button
+          type="button"
+          className="flexing-pagination-arrow is-previous"
+          aria-label="หน้าก่อนหน้า"
+          disabled={page <= 1}
+          onClick={() => onChange(page - 1)}
+        >
+          <span className="flexing-arrow-icon" aria-hidden="true">‹</span>
+          <span className="flexing-arrow-label">ก่อนหน้า</span>
+        </button>
+
+        <span className="flexing-pagination-current" aria-live="polite">
+          <strong>{page}</strong>
+          <span>/</span>
+          <span>{pages}</span>
+        </span>
+
+        <button
+          type="button"
+          className="flexing-pagination-arrow is-next"
+          aria-label="หน้าถัดไป"
+          disabled={page >= pages}
+          onClick={() => onChange(page + 1)}
+        >
+          <span className="flexing-arrow-label">ถัดไป</span>
+          <span className="flexing-arrow-icon" aria-hidden="true">›</span>
+        </button>
+      </nav>
+    </>
   );
 }
 
@@ -3207,14 +3382,37 @@ function Reports() {
   const [reports, setReports] = useState([]);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState("20");
+
   const load = () =>
     api
       .get("/admin/problem-reports", { params: { q: query } })
-      .then((response) => setReports(response.data))
+      .then((response) => {
+        setReports(response.data);
+        setPage(1);
+        setError("");
+      })
       .catch((err) => setError(getErrorMessage(err)));
+
   useEffect(() => {
     load();
   }, []);
+
+  const totalPages =
+    pageSize === "ALL"
+      ? 1
+      : Math.max(1, Math.ceil(reports.length / Number(pageSize)));
+  const visibleReports =
+    pageSize === "ALL"
+      ? reports
+      : reports.slice((page - 1) * Number(pageSize), page * Number(pageSize));
+
+  function changePageSize(value) {
+    setPageSize(value);
+    setPage(1);
+  }
+
   return (
     <>
       <PageHeader
@@ -3241,6 +3439,22 @@ function Reports() {
         <button className="btn btn-primary">ค้นหา</button>
       </form>
       <section className="content-card">
+        <div className="evaluations-page-size">
+          <label htmlFor="reports-page-size-select">แสดง</label>
+          <select
+            id="reports-page-size-select"
+            value={pageSize}
+            onChange={(event) => changePageSize(event.target.value)}
+            aria-label="จำนวนแถวที่แสดง"
+          >
+            <option value="10">10</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="ALL">ALL</option>
+          </select>
+          <span>แถว</span>
+        </div>
         <div className="table-responsive">
           <table className="table data-table align-middle">
             <thead>
@@ -3254,7 +3468,7 @@ function Reports() {
               </tr>
             </thead>
             <tbody>
-              {reports.map((report) => (
+              {visibleReports.map((report) => (
                 <tr key={report.report_id}>
                   <td>
                     <b>
@@ -3285,7 +3499,7 @@ function Reports() {
                   </td>
                 </tr>
               ))}
-              {!reports.length && (
+              {!visibleReports.length && (
                 <tr>
                   <td colSpan="6">
                     <div className="empty-state">ไม่พบรายการแจ้งปัญหา</div>
@@ -3295,6 +3509,7 @@ function Reports() {
             </tbody>
           </table>
         </div>
+        <Pagination page={page} pages={totalPages} onChange={setPage} />
       </section>
     </>
   );

@@ -419,10 +419,28 @@ a {
   font-weight: 400;
 }
 .logout-btn {
+  /* ปุ่มออกจากระบบบน PC: คงขนาดพอดีกับข้อความ ไม่ยืดหรือพอง */
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: auto;
+  min-width: 0;
+  min-height: 0;
   border: 0;
+  border-radius: 0;
   background: transparent;
   color: #8995a8;
-  padding: 5px;
+  padding: 5px 0;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+  white-space: nowrap;
+  box-shadow: none;
+}
+.logout-btn span {
+  display: inline;
 }
 .admin-main {
   margin-left: 240px;
@@ -1002,9 +1020,50 @@ a {
     margin-right: 10px;
   }
   .sidebar-brand span,
-  .sidebar-label,
-  .sidebar-bottom {
+  .sidebar-label {
     display: none;
+  }
+
+  /* แสดงปุ่มออกจากระบบบนมือถือที่ท้ายแถบเมนู */
+  .sidebar-bottom {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0;
+    margin: 0 0 0 6px;
+    padding: 0 0 0 10px;
+    border-top: 0;
+    border-left: 1px solid #edf0f4;
+  }
+
+  .sidebar-bottom .admin-avatar,
+  .sidebar-bottom .admin-name {
+    display: none;
+  }
+
+  .sidebar-bottom .logout-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 36px;
+    padding: 8px 10px;
+    border: 1px solid #f2dada;
+    border-radius: 8px;
+    background: #fff5f5;
+    color: #c43d3d;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .sidebar-bottom .logout-btn span {
+    display: inline;
+  }
+
+  .sidebar-bottom .logout-btn:active {
+    background: #ffe8e8;
   }
   .nav-item {
     white-space: nowrap;
@@ -1573,4 +1632,508 @@ a {
   .action-spinner { animation-duration: 1.8s; }
   .action-check { animation: none; }
   .qr-create-button, .action-button-content { transition: none; }
+}
+
+/* =========================================
+   Flexing Pagination — เฉพาะมือถือและ iPad
+   PC ยังคงใช้ pagination แบบเดิม
+========================================= */
+.flexing-pagination {
+  display: none;
+}
+
+@media screen and (max-width: 1024px) {
+  .evaluations-pagination-desktop {
+    display: none !important;
+  }
+
+  .flexing-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(12px, 4vw, 26px);
+    width: 100%;
+    min-width: 0;
+    padding: 20px 4px 4px;
+    margin-top: 4px;
+    overflow: hidden;
+  }
+
+  .flexing-pagination-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    flex: 0 1 auto;
+    min-width: 42px;
+    min-height: 42px;
+    max-width: 42%;
+    padding: 0 11px;
+    border: 1px solid #dce7f7;
+    border-radius: 999px;
+    background: #f5f9ff;
+    color: #3478e5;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    overflow: hidden;
+    transition:
+      max-width 280ms cubic-bezier(.2,.8,.2,1),
+      min-width 280ms cubic-bezier(.2,.8,.2,1),
+      padding 280ms ease,
+      gap 280ms ease,
+      background-color 180ms ease,
+      border-color 180ms ease,
+      color 180ms ease,
+      box-shadow 180ms ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .flexing-pagination-arrow .flexing-arrow-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 18px;
+    width: 18px;
+    height: 24px;
+    font-family: Arial, sans-serif !important;
+    font-size: 29px;
+    font-weight: 300;
+    line-height: 18px;
+    transition: transform 280ms cubic-bezier(.2,.8,.2,1);
+  }
+
+  .flexing-pagination-arrow .flexing-arrow-label {
+    display: inline-block;
+    max-width: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition:
+      max-width 280ms cubic-bezier(.2,.8,.2,1),
+      opacity 160ms ease;
+  }
+
+  .flexing-pagination-arrow.is-previous {
+    padding-left: 8px;
+  }
+
+  .flexing-pagination-arrow.is-next {
+    padding-right: 8px;
+  }
+
+  .flexing-pagination-arrow:not(:disabled):active,
+  .flexing-pagination-arrow:not(:disabled):focus-visible {
+    max-width: 42%;
+    gap: 5px;
+    padding-left: 13px;
+    padding-right: 13px;
+    background: #eaf2ff;
+    border-color: #8bb3f0;
+    box-shadow: 0 3px 10px #3578e51c;
+    outline: none;
+  }
+
+  .flexing-pagination-arrow:not(:disabled):active .flexing-arrow-label,
+  .flexing-pagination-arrow:not(:disabled):focus-visible .flexing-arrow-label {
+    max-width: 64px;
+    opacity: 1;
+  }
+
+  .flexing-pagination-arrow.is-previous:not(:disabled):active .flexing-arrow-icon,
+  .flexing-pagination-arrow.is-previous:not(:disabled):focus-visible .flexing-arrow-icon {
+    transform: translateX(-2px);
+  }
+
+  .flexing-pagination-arrow.is-next:not(:disabled):active .flexing-arrow-icon,
+  .flexing-pagination-arrow.is-next:not(:disabled):focus-visible .flexing-arrow-icon {
+    transform: translateX(2px);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .flexing-pagination-arrow:not(:disabled):hover {
+      max-width: 42%;
+      gap: 5px;
+      padding-left: 13px;
+      padding-right: 13px;
+      background: #eaf2ff;
+      border-color: #8bb3f0;
+      box-shadow: 0 3px 10px #3578e51c;
+    }
+
+    .flexing-pagination-arrow:not(:disabled):hover .flexing-arrow-label {
+      max-width: 64px;
+      opacity: 1;
+    }
+
+    .flexing-pagination-arrow.is-previous:not(:disabled):hover .flexing-arrow-icon {
+      transform: translateX(-2px);
+    }
+
+    .flexing-pagination-arrow.is-next:not(:disabled):hover .flexing-arrow-icon {
+      transform: translateX(2px);
+    }
+  }
+
+  .flexing-pagination-arrow:disabled {
+    color: #aebbd0;
+    background: #f8fafd;
+    border-color: #edf1f7;
+    cursor: not-allowed;
+    opacity: .7;
+  }
+
+  .flexing-pagination-current {
+    display: inline-flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 7px;
+    flex: 0 0 auto;
+    min-width: 64px;
+    color: #8795aa;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .flexing-pagination-current strong {
+    color: #3478e5;
+    font-size: 21px;
+    font-weight: 600;
+  }
+
+  .flexing-pagination-current > span:last-child {
+    color: #53647d;
+    font-weight: 500;
+  }
+}
+
+@media screen and (max-width: 380px) {
+  .flexing-pagination {
+    gap: 9px;
+  }
+
+  .flexing-pagination-arrow {
+    min-width: 38px;
+    min-height: 40px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .flexing-pagination-current {
+    min-width: 54px;
+    gap: 5px;
+  }
+
+  .flexing-pagination-current strong {
+    font-size: 19px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flexing-pagination-arrow,
+  .flexing-pagination-arrow *,
+  .flexing-pagination-current {
+    transition: none !important;
+  }
+}
+\n
+
+/* จำนวนแถวที่แสดงในหน้าผลการประเมิน */
+.evaluations-page-size {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+  margin: 0 0 14px;
+  padding: 0 0 12px;
+  border-bottom: 1px solid #edf1f7;
+  color: #52627a;
+  font-size: 14px;
+}
+
+.evaluations-page-size label,
+.evaluations-page-size span {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.evaluations-page-size input {
+  width: 82px;
+  min-width: 0;
+  height: 38px;
+  padding: 6px 9px;
+  border: 1px solid #d8e1ed;
+  border-radius: 8px;
+  background: #fff;
+  color: #243247;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.evaluations-page-size input:focus {
+  border-color: #3478e5;
+  outline: 3px solid #3478e51a;
+}
+
+.evaluations-page-size .btn {
+  min-height: 38px;
+  padding: 6px 15px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.evaluations-page-size small {
+  margin-left: 3px;
+  color: #8996a8;
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .evaluations-page-size {
+    gap: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    font-size: 13px;
+  }
+
+  .evaluations-page-size input {
+    width: 76px;
+    height: 40px;
+    font-size: 14px;
+  }
+
+  .evaluations-page-size .btn {
+    min-height: 40px;
+    padding-inline: 14px;
+  }
+
+  .evaluations-page-size small {
+    flex-basis: 100%;
+    margin-left: 0;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 380px) {
+  .evaluations-page-size {
+    gap: 7px;
+  }
+
+  .evaluations-page-size input {
+    width: 68px;
+  }
+}
+
+
+/* ปรับแถบกำหนดจำนวนแถวให้อ่านง่ายและไม่เบียดกัน */
+.evaluations-page-size {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  column-gap: 9px;
+  row-gap: 7px;
+  padding: 12px 14px;
+  margin: 0 0 14px;
+  border: 1px solid #e8edf4;
+  border-radius: 11px;
+  background: #f9fbfe;
+}
+
+.evaluations-page-size label {
+  color: #52627a;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.evaluations-page-size input {
+  width: 76px;
+  height: 38px;
+  padding: 6px 10px;
+  border: 1px solid #dce5f1;
+  border-radius: 8px;
+  background: #fff;
+  color: #26354b;
+  font-size: 14px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.evaluations-page-size input:focus {
+  border-color: #6d9ce8;
+  outline: 3px solid #3578e51a;
+}
+
+.evaluations-page-size > span {
+  color: #68778d;
+  font-size: 13px;
+}
+
+.evaluations-page-size .btn {
+  min-height: 38px;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.evaluations-page-size small {
+  flex: 0 0 100%;
+  display: block;
+  margin: 0;
+  padding: 0;
+  color: #8996a8;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+@media (max-width: 768px) {
+  .evaluations-page-size {
+    column-gap: 8px;
+    row-gap: 6px;
+    padding: 11px 12px;
+    margin-bottom: 12px;
+  }
+
+  .evaluations-page-size label,
+  .evaluations-page-size > span {
+    font-size: 13px;
+  }
+
+  .evaluations-page-size input {
+    width: 72px;
+    height: 38px;
+  }
+
+  .evaluations-page-size .btn {
+    min-height: 38px;
+    padding-inline: 15px;
+  }
+
+  .evaluations-page-size small {
+    padding-left: 0;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 360px) {
+  .evaluations-page-size {
+    column-gap: 6px;
+    padding-inline: 10px;
+  }
+
+  .evaluations-page-size input {
+    width: 64px;
+  }
+}
+
+
+/* Dropdown เลือกจำนวนแถว: เรียบง่าย กระชับ ไม่ต้องกดปุ่มยืนยัน */
+.evaluations-page-size {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+  margin: 0 0 14px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.evaluations-page-size label,
+.evaluations-page-size span {
+  color: #65748a;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.evaluations-page-size select {
+  width: 82px;
+  height: 36px;
+  padding: 5px 28px 5px 10px;
+  border: 1px solid #dce5f1;
+  border-radius: 8px;
+  background-color: #fff;
+  color: #26354b;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.evaluations-page-size select:focus {
+  border-color: #76a4ed;
+  outline: 3px solid #3578e51a;
+}
+@media (max-width: 768px) {
+  .evaluations-page-size {
+    justify-content: flex-end;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .evaluations-page-size select {
+    width: 78px;
+    height: 36px;
+  }
+}
+
+
+/* ป้องกันตัวเลขใน dropdown จำนวนแถวถูกตัด โดยเฉพาะค่า 100 */
+.evaluations-page-size {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.evaluations-page-size select {
+  display: block;
+  flex: 0 0 104px;
+  width: 104px !important;
+  min-width: 104px;
+  max-width: 104px;
+  height: 40px;
+  padding: 6px 30px 6px 12px !important;
+  line-height: 1.4;
+  white-space: nowrap;
+  text-overflow: clip;
+  box-sizing: border-box;
+}
+
+.evaluations-page-size small {
+  flex-basis: 100%;
+  text-align: right;
+  color: #8996a8;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+@media (max-width: 768px) {
+  .evaluations-page-size {
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .evaluations-page-size select {
+    flex-basis: 104px;
+    width: 104px !important;
+    min-width: 104px;
+    max-width: 104px;
+    height: 40px;
+    padding-left: 12px !important;
+    padding-right: 30px !important;
+    font-size: 14px;
+  }
+
+  .evaluations-page-size small {
+    text-align: right;
+  }
 }
