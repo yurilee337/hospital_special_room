@@ -3087,6 +3087,80 @@ function Evaluations() {
           max-width: 100%;
           box-sizing: border-box;
         }
+        .evaluations-filter-bar .date-filter-field {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          gap: 6px;
+          width: 100%;
+          min-width: 0;
+          max-width: 100%;
+          box-sizing: border-box;
+        }
+        .evaluations-filter-bar .date-filter-field label {
+          display: block;
+          margin: 0;
+          color: #64748b;
+          font-size: 13px;
+          line-height: 1.35;
+          font-weight: 500;
+        }
+        .evaluations-filter-bar .date-filter-field input[type="date"] {
+          display: block;
+          width: 100%;
+          min-width: 0;
+          max-width: 100%;
+          min-height: 46px;
+          box-sizing: border-box;
+          color: #263445;
+          background-color: #fff;
+          color-scheme: light;
+          font-size: 14px;
+          line-height: 1.4;
+          padding: 10px 42px 10px 12px;
+          position: relative;
+          z-index: 2;
+          -webkit-appearance: auto;
+          appearance: auto;
+        }
+        .evaluations-filter-bar .date-filter-field input[type="date"]::-webkit-datetime-edit {
+          color: #263445;
+          opacity: 1;
+        }
+        .evaluations-filter-bar .date-filter-field input[type="date"]::-webkit-calendar-picker-indicator {
+          opacity: 0;
+          position: absolute;
+          right: 0;
+          width: 44px;
+          height: 100%;
+          cursor: pointer;
+        }
+        .evaluations-filter-bar .date-filter-placeholder {
+          position: absolute;
+          left: 13px;
+          bottom: 14px;
+          z-index: 3;
+          color: #94a3b8;
+          font-size: 14px;
+          line-height: 1.4;
+          pointer-events: none;
+          user-select: none;
+        }
+        .evaluations-filter-bar .date-filter-field::after {
+          content: "";
+          position: absolute;
+          right: 14px;
+          bottom: 13px;
+          width: 20px;
+          height: 20px;
+          z-index: 3;
+          pointer-events: none;
+          background-repeat: no-repeat;
+          background-position: center;
+          background-size: contain;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M16 3v4M8 3v4M3 10h18'/%3E%3C/svg%3E");
+        }
         .evaluations-filter-bar .search-field input,
         .evaluations-filter-bar > select,
         .evaluations-filter-bar > input[type="date"] {
@@ -3178,8 +3252,7 @@ function Evaluations() {
             padding: 10px 36px 10px 12px;
             background-position: right 10px center;
           }
-          .evaluations-filter-bar > select,
-          .evaluations-filter-bar > input[type="date"] {
+          .evaluations-filter-bar > select {
             min-height: 46px;
             height: auto;
             width: 100%;
@@ -3188,6 +3261,17 @@ function Evaluations() {
             line-height: 1.4;
             padding: 10px 34px 10px 12px;
             box-sizing: border-box;
+          }
+          .evaluations-filter-bar .date-filter-field {
+            grid-column: 1 / -1;
+            width: 100%;
+            min-width: 0;
+          }
+          .evaluations-filter-bar .date-filter-field input[type="date"] {
+            min-height: 46px;
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 14px;
           }
           .evaluations-filter-bar .ward-filter-options {
             max-height: 190px !important;
@@ -3302,24 +3386,42 @@ function Evaluations() {
           <option value="1">มีปัญหา</option>
           <option value="0">ไม่มีปัญหา</option>
         </select>
-        <input
-          className="form-control"
-          type="date"
-          aria-label="ตั้งแต่วันที่"
-          value={filters.from}
-          onChange={(event) =>
-            setFilters({ ...filters, from: event.target.value })
-          }
-        />
-        <input
-          className="form-control"
-          type="date"
-          aria-label="ถึงวันที่"
-          value={filters.to}
-          onChange={(event) =>
-            setFilters({ ...filters, to: event.target.value })
-          }
-        />
+        <div className="date-filter-field">
+          <label htmlFor="evaluations-date-from">ตั้งแต่วันที่</label>
+          <input
+            id="evaluations-date-from"
+            className="form-control"
+            type="date"
+            aria-label="ตั้งแต่วันที่"
+            value={filters.from}
+            onChange={(event) =>
+              setFilters({ ...filters, from: event.target.value })
+            }
+          />
+          {!filters.from && (
+            <span className="date-filter-placeholder" aria-hidden="true">
+              วว/ดด/ปปปป
+            </span>
+          )}
+        </div>
+        <div className="date-filter-field">
+          <label htmlFor="evaluations-date-to">ถึงวันที่</label>
+          <input
+            id="evaluations-date-to"
+            className="form-control"
+            type="date"
+            aria-label="ถึงวันที่"
+            value={filters.to}
+            onChange={(event) =>
+              setFilters({ ...filters, to: event.target.value })
+            }
+          />
+          {!filters.to && (
+            <span className="date-filter-placeholder" aria-hidden="true">
+              วว/ดด/ปปปป
+            </span>
+          )}
+        </div>
         <button className="btn btn-primary">ค้นหา</button>
       </form>
       <section className="content-card">
