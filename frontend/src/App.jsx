@@ -2937,6 +2937,24 @@ function Evaluations() {
   const [loadingRows, setLoadingRows] = useState(false);
   const loadSequence = useRef(0);
   const [openFilterWardPicker, setOpenFilterWardPicker] = useState(false);
+  const wardFilterPickerRef = useRef(null);
+
+  // ปิด Dropdown เมื่อคลิกหรือแตะพื้นที่ใดก็ตามที่อยู่นอกช่องเลือก Ward
+  useEffect(() => {
+    function handleOutsideClick(event) {
+      if (
+        wardFilterPickerRef.current &&
+        !wardFilterPickerRef.current.contains(event.target)
+      ) {
+        setOpenFilterWardPicker(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handleOutsideClick);
+    return () => {
+      document.removeEventListener("pointerdown", handleOutsideClick);
+    };
+  }, []);
 
   const load = async (requestedPage = page) => {
     const sequence = ++loadSequence.current;
@@ -3363,7 +3381,7 @@ function Evaluations() {
             }
           />
         </div>
-        <div className="position-relative ward-filter-picker">
+        <div ref={wardFilterPickerRef} className="position-relative ward-filter-picker">
           <button
             type="button"
             className="form-select text-start"
