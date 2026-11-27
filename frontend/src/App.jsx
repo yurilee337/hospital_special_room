@@ -3072,12 +3072,40 @@ function Evaluations() {
           width: 100%;
           max-width: none;
           min-width: 0;
-          grid-template-columns: repeat(
-            auto-fit,
-            minmax(min(100%, 220px), 1fr)
-          );
-          align-items: stretch;
+          /* PC: จัดตัวกรองทั้ง 6 ช่องให้อยู่ในแถวเดียว */
+          grid-template-columns:
+            minmax(0, 1.2fr)
+            minmax(0, 1.1fr)
+            minmax(0, 1.1fr)
+            minmax(0, 1fr)
+            minmax(0, 1fr)
+            auto;
+          align-items: end;
           gap: 10px;
+          padding: 14px 16px;
+          /* ให้ dropdown ลอยเหนือการ์ดถัดไป โดยไม่เพิ่มความสูงของฟอร์ม */
+          position: relative;
+          z-index: 50;
+          overflow: visible !important;
+        }
+        .evaluations-filter-bar .search-field,
+        .evaluations-filter-bar .ward-filter-picker > button,
+        .evaluations-filter-bar > select {
+          min-height: 46px;
+          height: 46px;
+          box-sizing: border-box;
+        }
+        .evaluations-filter-bar .search-field {
+          height: 46px;
+        }
+        .evaluations-filter-bar > .btn {
+          width: auto;
+          min-width: 104px;
+          height: 46px;
+          min-height: 46px;
+          padding: 10px 20px;
+          white-space: nowrap;
+          justify-self: end;
         }
         .evaluations-filter-bar > *,
         .evaluations-filter-bar .search-field,
@@ -3169,6 +3197,16 @@ function Evaluations() {
           max-width: 100%;
           box-sizing: border-box;
         }
+        .evaluations-filter-bar .ward-filter-picker {
+          position: relative;
+          align-self: end;
+          z-index: 1;
+          min-height: 46px;
+        }
+        /* ยกเฉพาะช่อง Ward ขึ้นมาเมื่อเปิดรายการ */
+        .evaluations-filter-bar .ward-filter-picker:has(.ward-filter-options) {
+          z-index: 100;
+        }
         .evaluations-filter-bar .ward-filter-picker > button {
           display: block;
           width: 100%;
@@ -3186,17 +3224,29 @@ function Evaluations() {
           box-sizing: border-box;
         }
         .evaluations-filter-bar .ward-filter-options {
-          left: 0;
-          right: auto;
-          width: 100%;
-          min-width: 0;
-          max-width: 100%;
-          max-height: min(45vh, 320px) !important;
+          /* แสดงเป็น overlay ใต้ปุ่ม ไม่อยู่ใน flow ของ Grid */
+          position: absolute !important;
+          top: calc(100% + 6px) !important;
+          bottom: auto !important;
+          left: 0 !important;
+          right: auto !important;
+          transform: none !important;
+          margin: 0 !important;
+          width: 100% !important;
+          min-width: 100% !important;
+          max-width: min(320px, 90vw) !important;
+          max-height: min(260px, 45vh) !important;
           overflow-x: hidden !important;
           overflow-y: auto !important;
           overscroll-behavior: contain;
           -webkit-overflow-scrolling: touch;
           box-sizing: border-box;
+          z-index: 1000 !important;
+          box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16) !important;
+        }
+        .evaluations-filter-bar + .content-card {
+          position: relative;
+          z-index: 0;
         }
         .evaluations-filter-bar .ward-filter-options .dropdown-item {
           display: block;
@@ -3213,7 +3263,7 @@ function Evaluations() {
           box-sizing: border-box;
         }
         /* Tablet: ใช้ 2 คอลัมน์เมื่อมีพื้นที่เพียงพอ */
-        @media (min-width: 601px) and (max-width: 1024px) {
+        @media (min-width: 601px) and (max-width: 1199px) {
           .evaluations-filter-bar {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
