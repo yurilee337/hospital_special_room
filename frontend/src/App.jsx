@@ -21,6 +21,7 @@ import {
   Lock,
   LogOut,
   QrCode,
+  FileText,
   Search,
   Star,
   TriangleAlert,
@@ -1093,6 +1094,7 @@ function AdminLayout({ children }) {
     ["/admin/evaluations", ClipboardList, "ผลการประเมิน"],
     ["/admin/reports", TriangleAlert, "รายการแจ้งปัญหา"],
     ["/admin/qr-codes", QrCode, "QR Code อาคาร/เตียง"],
+    ["/manual.pdf", FileText, "คู่มือการใช้งาน"],
   ];
   return (
     <div className="admin-shell">
@@ -1110,17 +1112,38 @@ function AdminLayout({ children }) {
           </span>
         </Link>
         <div className="sidebar-label">เมนูหลัก</div>
-        {nav.map(([to, Icon, label]) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === "/admin"}
-            className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
-          >
-            <Icon size={18} />
-            {label}
-          </NavLink>
-        ))}
+        {nav.map(([to, Icon, label]) => {
+          const isPdf = to.toLowerCase().endsWith(".pdf");
+
+          if (isPdf) {
+            return (
+              <a
+                key={to}
+                href={to}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="nav-item"
+              >
+                <Icon size={18} />
+                {label}
+              </a>
+            );
+          }
+
+          return (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === "/admin"}
+              className={({ isActive }) =>
+                `nav-item ${isActive ? "active" : ""}`
+              }
+            >
+              <Icon size={18} />
+              {label}
+            </NavLink>
+          );
+        })}
         <div className="sidebar-bottom">
           <div className="admin-avatar">
             {admin.username.slice(0, 1).toUpperCase()}
